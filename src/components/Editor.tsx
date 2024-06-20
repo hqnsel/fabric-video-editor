@@ -1,4 +1,5 @@
 "use client";
+import ShapeAdder from './ShapeAdder';
 import anime from "animejs";
 import { fabric } from "fabric";
 import React, { useEffect, useState } from "react";
@@ -74,6 +75,7 @@ export const Editor = observer(() => {
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
       <div className="tile row-span-2 flex flex-col">
         <Menu />
+        <ShapeAdder />  {/* ShapeAdder added here for visibility */}
       </div>
       <div className="row-span-2 flex flex-col overflow-scroll">
         <Resources />
