@@ -2,12 +2,13 @@
 "use client";
 import React, { useContext, useState } from 'react';
 import { fabric } from 'fabric';
+import { observer } from 'mobx-react';
 import { StoreContext } from "@/store";
 
-const ShapeAdder = () => {
+const ShapeAdder = observer(() => {
     const [selectedShape, setSelectedShape] = useState('rectangle');
     const store = useContext(StoreContext);
-    const canvas = store.canvas; // Assuming canvas instance is stored in the MobX store
+    const canvas = store.canvas;
 
     const handleAddShape = () => {
         if (!canvas) {
@@ -15,48 +16,48 @@ const ShapeAdder = () => {
             return;
         }
 
-        let newShape;
+        let properties = {
+            fill: 'red', // Default fill color
+            left: 100, // Default position
+            top: 100  // Default position
+        };
 
         switch(selectedShape) {
             case 'circle':
-                newShape = new fabric.Circle({
-                    radius: 30,
-                    fill: 'red',
-                    left: 100,
-                    top: 100
-                });
+                properties.radius = 30; // Specific property for circle
+                var newShape = new fabric.Circle(properties);
                 break;
             case 'square':
-                newShape = new fabric.Rect({
-                    width: 60,
-                    height: 60,
-                    fill: 'blue',
-                    left: 150,
-                    top: 150
-                });
+                properties.width = 60;
+                properties.height = 60;
+                var newShape = new fabric.Rect(properties);
                 break;
             case 'rectangle':
-                newShape = new fabric.Rect({
-                    width: 80,
-                    height: 40,
-                    fill: 'green',
-                    left: 200,
-                    top: 200
-                });
+                properties.width = 80;
+                properties.height = 40;
+                var newShape = new fabric.Rect(properties);
                 break;
             case 'triangle':
-                newShape = new fabric.Triangle({
-                    width: 70,
-                    height: 60,
-                    fill: 'yellow',
-                    left: 250,
-                    top: 250
-                });
+                properties.width = 70;
+                properties.height = 60;
+                var newShape = new fabric.Triangle(properties);
                 break;
             default:
-                return; // to handle undefined shape, do nothing
+                return; // Handle undefined shape
         }
+
         canvas.add(newShape);
+        canvas.renderAll();
+
+        store.addShapeResource({
+            type: selectedShape,
+            fill: properties.fill,
+            left: properties.left,
+            top: properties.top,
+            width: properties.width || properties.radius * 2,
+            height: properties.height || properties.radius * 2,
+            radius: properties.radius
+        });
     };
 
     return (
@@ -70,6 +71,6 @@ const ShapeAdder = () => {
             <button onClick={handleAddShape}>Add Shape</button>
         </div>
     );
-};
+});
 
 export default ShapeAdder;

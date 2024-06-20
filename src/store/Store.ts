@@ -88,6 +88,41 @@ export class Store {
     this.videos = videos;
   }
 
+  addShapeResource(shapeObject) {
+    const dimensions = shapeObject.type === 'circle' ? {
+        width: shapeObject.radius * 2,
+        height: shapeObject.radius * 2
+    } : {
+        width: shapeObject.width,
+        height: shapeObject.height
+    };
+
+    const newShape = {
+        id: getUid(),  // Ensure to create unique IDs for new elements
+        name: `Shape ${this.editorElements.length + 1}`,  // Customize as per your use case
+        type: shapeObject.type,  // 'circle', 'rectangle', etc.
+        placement: {
+            x: shapeObject.left,
+            y: shapeObject.top,
+            ...dimensions,
+            rotation: 0,  // Default rotation
+            scaleX: 1,
+            scaleY: 1,
+        },
+        timeFrame: {
+            start: 0,
+            end: this.maxTime,
+        },
+        properties: {
+            fill: shapeObject.fill  // Additional properties as needed
+        },
+        fabricObject: shapeObject  // Reference to the actual fabric object
+    };
+
+    this.editorElements.push(newShape);
+    this.refreshElements();  // Make sure this re-renders the elements where necessary
+}
+
   addVideoResource(video: string) {
     this.videos = [...this.videos, video];
   }
