@@ -1,5 +1,5 @@
 "use client";
-
+import anime from "animejs";
 import { fabric } from "fabric";
 import React, { useEffect, useState } from "react";
 import { StoreContext } from "@/store";
@@ -42,6 +42,29 @@ export const Editor = observer(() => {
     });
 
     store.setCanvas(canvas);
+
+    // Adding the rectangle and applying the animation
+    const rect = new fabric.Rect({
+      left: 100,
+      top: 100,
+      fill: 'red',
+      width: 50,
+      height: 50
+    });
+    canvas.add(rect);
+    anime({
+      targets: rect,
+      left: 400,
+      easing: 'easeInOutQuad',
+      loop: true,
+      direction: 'alternate',
+      duration: 3000,
+      update: function() {
+        rect.setCoords(); // Update fabric object position during animation
+        canvas.requestRenderAll(); // Re-render canvas to reflect changes
+      }
+    });
+
     fabric.util.requestAnimFrame(function render() {
       canvas.renderAll();
       fabric.util.requestAnimFrame(render);
@@ -49,7 +72,6 @@ export const Editor = observer(() => {
   }, []);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
-
       <div className="tile row-span-2 flex flex-col">
         <Menu />
       </div>

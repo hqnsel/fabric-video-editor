@@ -1,3 +1,4 @@
+import anime from "animejs";
 import { EditorElement, EffecType } from "@/types";
 import { fabric } from "fabric";
 // https://jsfiddle.net/i_prikot/pw7yhaLf/
@@ -86,6 +87,16 @@ export const CoverImage = fabric.util.createClass(fabric.Image, {
     },
 
 });
+
+// Correctly type the parameter as fabric.Object
+export function animateOpacity(fabricObject: fabric.Object) {
+    anime({
+        targets: fabricObject,
+        opacity: [0, 1], // Animate from fully transparent to fully visible
+        easing: 'linear',
+        duration: 2000 // 2 seconds
+    });
+}
 
 export const CoverVideo = fabric.util.createClass(fabric.Image, {
     type: "coverVideo",
