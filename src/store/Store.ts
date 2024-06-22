@@ -739,10 +739,7 @@ export class Store {
     store.canvas.remove(...store.canvas.getObjects());
     for (let index = 0; index < store.editorElements.length; index++) {
       const element = store.editorElements[index];
-      console.log("Element Type:", element.type);  // Log the element type
-      if (element.type === "shape") {
-        console.log("Shape Type:", element.properties.shapeType);  // Log the shape type if it's a shape
-      }
+      console.log("Element Type:", element.type);  // Log the element type// Log the shape type if it's a shape
       switch (element.type) {
         case "video": {
           console.log("elementid", element.properties.elementId);
