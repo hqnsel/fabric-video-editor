@@ -19,7 +19,9 @@ export const ShapeResourcesPanel = observer(() => {
     let properties = {
       fill: 'red', // Default fill color
       left: 100, // Default position
-      top: 100  // Default position
+      top: 100,
+      selectable: true, // Ensure the shape is selectable
+      hasControls: true,  // Default position
     };
 
     let newShape;
