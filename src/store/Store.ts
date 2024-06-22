@@ -923,12 +923,39 @@ export class Store {
           });
           break;
         }
-        default: {
-          throw new Error("Not implemented");
+        case "shape":
+        const shapeProps = {
+          left: element.placement.x,
+          top: element.placement.y,
+          angle: element.placement.rotation,
+          fill: element.properties.fill,
+          selectable: true,
+          scaleX: element.placement.scaleX,
+          scaleY: element.placement.scaleY,
+        };
+        let shapeObject;
+        switch (element.properties.shapeType) {
+          case 'rectangle':
+            shapeObject = new fabric.Rect({ ...shapeProps, width: element.placement.width, height: element.placement.height });
+            break;
+          case 'circle':
+            shapeObject = new fabric.Circle({ ...shapeProps, radius: element.placement.width / 2 });
+            break;
+          case 'triangle':
+            shapeObject = new fabric.Triangle({ ...shapeProps, width: element.placement.width, height: element.placement.height });
+            break;
+          default:
+            console.error("Unsupported shape type:", element.properties.shapeType);
+            continue;
         }
+        element.fabricObject = shapeObject;
+        canvas.add(shapeObject);
+        break;
+        default:
+          throw new Error("Not implemented: " + element.type);
       }
       if (element.fabricObject) {
-        element.fabricObject.on("selected", function (e) {
+        element.fabricObject.on("selected", function () {
           store.setSelectedElement(element);
         });
       }
