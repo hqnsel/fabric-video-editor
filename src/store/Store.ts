@@ -953,7 +953,7 @@ export class Store {
             break;
           default:
             console.error("Unsupported shape type:", element.properties.shapeType);
-            continue;
+            throw new Error("Not implemented: " + element.properties.shapeType);
         }
         element.fabricObject = shapeObject;
         canvas.add(shapeObject);
