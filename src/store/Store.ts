@@ -938,6 +938,9 @@ export class Store {
           case 'rectangle':
             shapeObject = new fabric.Rect({ ...shapeProps, width: element.placement.width, height: element.placement.height });
             break;
+          case 'square':  // Treat square the same as rectangle
+            shapeObject = new fabric.Rect({ ...shapeProps, width: element.placement.width, height: element.placement.height });
+            break;
           case 'circle':
             shapeObject = new fabric.Circle({ ...shapeProps, radius: element.placement.width / 2 });
             break;
