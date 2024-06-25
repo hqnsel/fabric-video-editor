@@ -936,8 +936,6 @@ export class Store {
             lockRotation: false,
             lockScalingX: false,
             lockScalingY: false,
-            scaleX: element.placement.scaleX,
-            scaleY: element.placement.scaleY,
           };
           let shapeObject;
           switch (element.properties.shapeType) {
@@ -945,12 +943,12 @@ export class Store {
             case 'square':
               shapeObject = new fabric.Rect(shapeProps);
               break;
-            case 'circle':
-              shapeObject = new fabric.Circle({
-                ...shapeProps,
-                radius: (element.placement.width * element.placement.scaleX) / 2,
-              });
-              break;
+              case 'circle':
+                shapeObject = new fabric.Circle({
+                  ...shapeProps,
+                  radius: element.placement.width / 2,
+                });
+                break;
             case 'triangle':
               shapeObject = new fabric.Triangle(shapeProps);
               break;
@@ -961,16 +959,28 @@ export class Store {
           element.fabricObject = shapeObject;
           canvas.add(shapeObject);
         
-          shapeObject.on('scaling', function(e) {
+          shapeObject.on('modified', function(e) {
             const target = e.target;
-            const newWidth = target.width * target.scaleX;
-            const newHeight = target.height * target.scaleY;
+            const newPlacement: Placement = {
+              x: target.left,
+              y: target.top,
+              width: target.width * target.scaleX,
+              height: target.height * target.scaleY,
+              rotation: target.angle,
+              scaleX: 1,
+              scaleY: 1,
+            };
             target.set({
-              'width': newWidth,
-              'height': newHeight,
-              'scaleX': 1,
-              'scaleY': 1
+              width: newPlacement.width,
+              height: newPlacement.height,
+              scaleX: 1,
+              scaleY: 1,
             });
+            const newElement = {
+              ...element,
+              placement: newPlacement,
+            };
+            store.updateEditorElement(newElement);
           });
         
           break;

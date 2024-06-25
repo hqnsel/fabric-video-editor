@@ -25,7 +25,12 @@ export const Editor = observer(() => {
   const store = React.useContext(StoreContext);
 
   useEffect(() => {
-    const canvas = new fabric.Canvas("canvas", {
+    const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+    if (!canvasElement) {
+      console.error("Canvas element not found");
+      return;
+    }
+    const canvas = new fabric.Canvas(canvasElement, {
       height: 500,
       width: 800,
       backgroundColor: "#ededed",
