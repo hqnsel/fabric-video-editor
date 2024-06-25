@@ -168,6 +168,22 @@ export class Store {
     if (this.canvas) {
       this.canvas.add(fabricObject);
       this.canvas.setActiveObject(fabricObject);
+      fabricObject.on('modified', (e) => {
+        const target = e.target as fabric.Object;
+        const updatedShape = {
+          ...newShape,
+          placement: {
+            x: target.left ?? newShape.placement.x,
+            y: target.top ?? newShape.placement.y,
+            width: target.getScaledWidth(),
+            height: target.getScaledHeight(),
+            rotation: target.angle ?? newShape.placement.rotation,
+            scaleX: target.scaleX ?? newShape.placement.scaleX,
+            scaleY: target.scaleY ?? newShape.placement.scaleY,
+          }
+        };
+        this.updateEditorElement(updatedShape);
+      });
       this.canvas.renderAll();
     }
     this.setSelectedElement(newShape);
