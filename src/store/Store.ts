@@ -819,6 +819,7 @@ export class Store {
         lockScalingY: false,
         editable: true
       });
+      obj.setCoords();
     };
 
 if (canvas) {
@@ -1015,7 +1016,7 @@ if (canvas) {
         setEditableProperties(fabricObject);
         element.fabricObject = fabricObject;
         canvas.add(fabricObject);
-
+      
         fabricObject.on("modified", function (e) {
           if (!e.target) return;
           const target = e.target;
@@ -1035,18 +1036,24 @@ if (canvas) {
           };
           store.updateEditorElement(newElement);
         });
-
+      
         fabricObject.on("selected", function () {
           store.setSelectedElement(element);
         });
+      
+        canvas.setActiveObject(fabricObject);
       }
     }
 
     this.refreshAnimations();
     this.updateTimeTo(this.currentTimeInMs);
     canvas.renderAll();
-    canvas.forEachObject(obj => obj.setCoords());
-    }
+    canvas.forEachObject(obj => {
+      obj.setCoords();
+      obj.set('active', true);
+    });
+    canvas.requestRenderAll();
+  }
   }
 }
 
