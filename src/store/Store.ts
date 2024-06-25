@@ -806,14 +806,31 @@ export class Store {
       return;
     }
     const canvas = store.canvas;
-    if (canvas) {
-      canvas.clear();
-      for (let index = 0; index < store.editorElements.length; index++) {
-        const element = store.editorElements[index];
-        console.log("Element Type:", element.type);
-        if (element.fabricObject) {
-          canvas.add(element.fabricObject);
-        }
+
+    const setEditableProperties = (obj: fabric.Object) => {
+      obj.set({
+        selectable: true,
+        hasControls: true,
+        hasBorders: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        editable: true
+      });
+    };
+
+if (canvas) {
+    canvas.clear();
+    canvas.selection = true; // Enable group selection
+    canvas.isDrawingMode = false; // Disable drawing mode
+
+    for (let index = 0; index < store.editorElements.length; index++) {
+      const element = store.editorElements[index];
+      console.log("Element Type:", element.type);
+
+      let fabricObject: fabric.Object | null = null;
       
         switch (element.type) {
           case "video": {
@@ -953,121 +970,86 @@ export class Store {
               angle: element.placement.rotation,
               fontSize: element.properties.fontSize,
               fontWeight: element.properties.fontWeight,
-              objectCaching: false,
-              selectable: true,
-              lockUniScaling: true,
               fill: "#ffffff",
             });
-            element.fabricObject = textObject;
-            canvas.add(textObject);
-            canvas.on("object:modified", function (e) {
-              if (!e.target) return;
-              const target = e.target;
-              if (target != textObject) return;
-              const placement = element.placement;
-              const newPlacement: Placement = {
-                ...placement,
-                x: target.left ?? placement.x,
-                y: target.top ?? placement.y,
-                rotation: target.angle ?? placement.rotation,
-                width: target.width ?? placement.width,
-                height: target.height ?? placement.height,
-                scaleX: target.scaleX ?? placement.scaleX,
-                scaleY: target.scaleY ?? placement.scaleY,
-              };
-              const newElement = {
-                ...element,
-                placement: newPlacement,
-                properties: {
-                  ...element.properties,
-                  text: target?.text,
-                },
-              };
-              store.updateEditorElement(newElement);
-            });
+            fabricObject = textObject;
             break;
           }
-          case "shape": {
-            const shapeProps = {
-              name: element.id,
-              left: element.placement.x,
-              top: element.placement.y,
-              width: element.placement.width,
-              height: element.placement.height,
-              scaleX: element.placement.scaleX,
-              scaleY: element.placement.scaleY,
-              angle: element.placement.rotation,
-              fill: element.properties.fill,
-              selectable: true,
-              hasControls: true,
-              hasBorders: true,
-              lockMovementX: false,
-              lockMovementY: false,
-              lockRotation: false,
-              lockScalingX: false,
-              lockScalingY: false,
-            };
-            let shapeObject;
-            switch (element.properties.shapeType) {
-              case 'rectangle':
-              case 'rect':
-                shapeObject = new fabric.Rect(shapeProps);
-                break;
-              case 'circle':
-                shapeObject = new fabric.Circle({
-                  ...shapeProps,
-                  radius: element.placement.width / 2,
-                });
-                break;
-              case 'triangle':
-                shapeObject = new fabric.Triangle(shapeProps);
-                break;
-              default:
-                console.error("Unsupported shape type:", element.properties.shapeType);
-                return;
-            }
-            
-            element.fabricObject = shapeObject;
-            canvas.add(shapeObject);
-          
-            shapeObject.on('modified', (e) => {
-              const target = e.target as fabric.Object;
-              const newPlacement: Placement = {
-                x: target.left ?? element.placement.x,
-                y: target.top ?? element.placement.y,
-                width: target.getScaledWidth(),
-                height: target.getScaledHeight(),
-                rotation: target.angle ?? element.placement.rotation,
-                scaleX: target.scaleX ?? element.placement.scaleX,
-                scaleY: target.scaleY ?? element.placement.scaleY,
-              };
-              const newElement = {
-                ...element,
-                placement: newPlacement,
-              };
-              store.updateEditorElement(newElement);
-            });
-          
-            break;
+          case "shape":
+          const shapeProps = {
+            name: element.id,
+            left: element.placement.x,
+            top: element.placement.y,
+            width: element.placement.width,
+            height: element.placement.height,
+            scaleX: element.placement.scaleX,
+            scaleY: element.placement.scaleY,
+            angle: element.placement.rotation,
+            fill: element.properties.fill,
+          };
+          switch (element.properties.shapeType) {
+            case 'rectangle':
+            case 'rect':
+              fabricObject = new fabric.Rect(shapeProps);
+              break;
+            case 'circle':
+              fabricObject = new fabric.Circle({
+                ...shapeProps,
+                radius: element.placement.width / 2,
+              });
+              break;
+            case 'triangle':
+              fabricObject = new fabric.Triangle(shapeProps);
+              break;
+            default:
+              console.error("Unsupported shape type:", element.properties.shapeType);
+              break;
           }
-          default:
-            console.error("Unhandled element type:", element.type);
-            break;
-        }
-        if (element.fabricObject) {
-          element.fabricObject.on("selected", function () {
-            store.setSelectedElement(element);
-          });
-        }
+          break;
+        default:
+          console.error("Unhandled element type:", element.type);
+          break;
       }
-      const selectedEditorElement = store.selectedElement;
-      if (selectedEditorElement && selectedEditorElement.fabricObject) {
-        canvas.setActiveObject(selectedEditorElement.fabricObject);
+          
+      if (fabricObject) {
+        setEditableProperties(fabricObject);
+        element.fabricObject = fabricObject;
+        canvas.add(fabricObject);
+
+        fabricObject.on("modified", function (e) {
+          if (!e.target) return;
+          const target = e.target;
+          const placement = element.placement;
+          const newPlacement: Placement = {
+            x: target.left ?? placement.x,
+            y: target.top ?? placement.y,
+            rotation: target.angle ?? placement.rotation,
+            width: target.getScaledWidth(),
+            height: target.getScaledHeight(),
+            scaleX: target.scaleX ?? placement.scaleX,
+            scaleY: target.scaleY ?? placement.scaleY,
+          };
+          const newElement = {
+            ...element,
+            placement: newPlacement,
+          };
+          store.updateEditorElement(newElement);
+        });
+
+        fabricObject.on("selected", function () {
+          store.setSelectedElement(element);
+        });
       }
-      this.refreshAnimations();
-      this.updateTimeTo(this.currentTimeInMs);
-      this.makeElementsEditable();
-      store.canvas.renderAll();
+    }
+
+    const selectedEditorElement = store.selectedElement;
+    if (selectedEditorElement && selectedEditorElement.fabricObject) {
+      canvas.setActiveObject(selectedEditorElement.fabricObject);
+    }
+
+    this.refreshAnimations();
+    this.updateTimeTo(this.currentTimeInMs);
+    canvas.renderAll();
     }
   }
 }
