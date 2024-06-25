@@ -727,8 +727,8 @@ export class Store {
 
   refreshElements() {
     const store = this;
-    if (!store.canvas) { 
-      console.error("Canvas is not initialized");
+    if (!store.canvas || !store.canvas.getContext()) { 
+      console.error("Canvas is not initialized or context is not available");
       return;
     }
     const canvas = store.canvas;
@@ -948,7 +948,7 @@ export class Store {
             case 'circle':
               shapeObject = new fabric.Circle({
                 ...shapeProps,
-                radius: element.placement.width / 2,
+                radius: (element.placement.width * element.placement.scaleX) / 2,
               });
               break;
             case 'triangle':
@@ -956,10 +956,23 @@ export class Store {
               break;
             default:
               console.error("Unsupported shape type:", element.properties.shapeType);
-              continue; // Skip this element and continue with the next one
+              continue;
           }
           element.fabricObject = shapeObject;
           canvas.add(shapeObject);
+        
+          shapeObject.on('scaling', function(e) {
+            const target = e.target;
+            const newWidth = target.width * target.scaleX;
+            const newHeight = target.height * target.scaleY;
+            target.set({
+              'width': newWidth,
+              'height': newHeight,
+              'scaleX': 1,
+              'scaleY': 1
+            });
+          });
+        
           break;
         }
         default:
