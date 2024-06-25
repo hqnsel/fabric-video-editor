@@ -132,6 +132,12 @@ export class Store {
     fabricObject.set({
       selectable: true,
       hasControls: true,
+      hasBorders: true,
+      lockMovementX: false,
+      lockMovementY: false,
+      lockRotation: false,
+      lockScalingX: false,
+      lockScalingY: false,
     });
   
     const newShape = {

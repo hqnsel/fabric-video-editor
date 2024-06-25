@@ -53,6 +53,11 @@ export const Editor = observer(() => {
       canvas.on("mouse:down", function (e) {
         if (!e.target) {
           store.setSelectedElement(null);
+        } else {
+          const selectedElement = store.editorElements.find(el => el.fabricObject === e.target);
+          if (selectedElement) {
+            store.setSelectedElement(selectedElement);
+          }
         }
       });
     
