@@ -970,10 +970,13 @@ export class Store {
           }
           case "shape": {
             const shapeProps = {
+              name: element.id,
               left: element.placement.x,
               top: element.placement.y,
               width: element.placement.width,
               height: element.placement.height,
+              scaleX: element.placement.scaleX,
+              scaleY: element.placement.scaleY,
               angle: element.placement.rotation,
               fill: element.properties.fill,
               selectable: true,
@@ -1003,13 +1006,13 @@ export class Store {
             element.fabricObject = shapeObject;
             canvas.add(shapeObject);
           
-            shapeObject.on('modified', function(e) {
-              const target = e.target;
+            shapeObject.on('modified', (e) => {
+              const target = e.target as fabric.Object;
               const newPlacement: Placement = {
                 x: target.left ?? element.placement.x,
                 y: target.top ?? element.placement.y,
-                width: target.width ?? element.placement.width,
-                height: target.height ?? element.placement.height,
+                width: target.getScaledWidth(),
+                height: target.getScaledHeight(),
                 rotation: target.angle ?? element.placement.rotation,
                 scaleX: target.scaleX ?? element.placement.scaleX,
                 scaleY: target.scaleY ?? element.placement.scaleY,
