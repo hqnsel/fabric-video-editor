@@ -28,7 +28,6 @@ export const Editor = observer(() => {
     const initCanvas = () => {
       const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
       if (!canvasElement) {
-        console.error("Canvas element not found");
         return;
       }
       const canvas = new fabric.Canvas(canvasElement, {
@@ -38,29 +37,18 @@ export const Editor = observer(() => {
         selection: true,
         preserveObjectStacking: true,
       });
-    
+  
       fabric.Object.prototype.transparentCorners = false;
       fabric.Object.prototype.cornerColor = "#00a0f5";
       fabric.Object.prototype.cornerStyle = "circle";
       fabric.Object.prototype.cornerStrokeColor = "#0063d8";
       fabric.Object.prototype.cornerSize = 10;
-    
+  
       fabric.Object.prototype.setControlsVisibility({
         mt: true, mb: true, ml: true, mr: true,
         tl: true, tr: true, bl: true, br: true,
       });
-    
-      canvas.on("mouse:down", function (e) {
-        if (!e.target) {
-          store.setSelectedElement(null);
-        } else {
-          const selectedElement = store.editorElements.find(el => el.fabricObject === e.target);
-          if (selectedElement) {
-            store.setSelectedElement(selectedElement);
-          }
-        }
-      });
-    
+  
       canvas.on("object:modified", function(e) {
         if (e.target) {
           const modifiedElement = store.editorElements.find(el => el.fabricObject === e.target);
@@ -81,19 +69,9 @@ export const Editor = observer(() => {
           }
         }
       });
-    
+  
       store.setCanvas(canvas);
-    
-      const render = () => {
-        canvas.requestRenderAll();
-        fabric.util.requestAnimFrame(render);
-      };
-    
-      render();
-    
-      return () => {
-        canvas.dispose();
-      };
+      store.refreshElements();
     };
   
     initCanvas();

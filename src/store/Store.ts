@@ -30,6 +30,24 @@ export class Store {
   possibleVideoFormats: string[] = ['mp4', 'webm'];
   selectedVideoFormat: 'mp4' | 'webm';
 
+  makeElementsEditable() {
+    if (this.canvas) {
+      this.canvas.forEachObject((obj) => {
+        obj.set({
+          selectable: true,
+          hasControls: true,
+          hasBorders: true,
+          lockMovementX: false,
+          lockMovementY: false,
+          lockRotation: false,
+          lockScalingX: false,
+          lockScalingY: false,
+        });
+      });
+      this.canvas.renderAll();
+    }
+  }
+
   constructor() {
     this.canvas = null;
     this.videos = [];
@@ -1048,6 +1066,7 @@ export class Store {
       }
       this.refreshAnimations();
       this.updateTimeTo(this.currentTimeInMs);
+      this.makeElementsEditable();
       store.canvas.renderAll();
     }
   }
