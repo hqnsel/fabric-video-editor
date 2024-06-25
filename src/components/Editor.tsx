@@ -24,7 +24,8 @@ export const EditorWithStore = () => {
 export const Editor = observer(() => {
   const store = React.useContext(StoreContext);
 
-  useEffect(() => {
+useEffect(() => {
+  const initCanvas = () => {
     const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
     if (!canvasElement) {
       console.error("Canvas element not found");
@@ -85,6 +86,30 @@ export const Editor = observer(() => {
       hasControls: true,
     });
     canvas.add(rect);
+
+    store.addEditorElement({
+      id: 'placeholder-rect',
+      name: 'Placeholder Rectangle',
+      type: 'shape',
+      placement: {
+        x: rect.left || 0,
+        y: rect.top || 0,
+        width: rect.width || 50,
+        height: rect.height || 50,
+        rotation: rect.angle || 0,
+        scaleX: rect.scaleX || 1,
+        scaleY: rect.scaleY || 1,
+      },
+      timeFrame: {
+        start: 0,
+        end: store.maxTime,
+      },
+      properties: {
+        shapeType: 'rectangle',
+        fill: 'red',
+      },
+      fabricObject: rect,
+    });
   
     const animate = () => {
       anime({
@@ -113,7 +138,10 @@ export const Editor = observer(() => {
     return () => {
       canvas.dispose();
     };
-  }, [store]);
+  };
+
+  setTimeout(initCanvas, 100);
+}, [store]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
       <div className="tile row-span-2 flex flex-col">
@@ -122,7 +150,7 @@ export const Editor = observer(() => {
       </div>
       <div className="row-span-2 flex flex-col overflow-scroll">
         <Resources />
-      </div>
+      </div><canvas id="canvas" width="800" height="500" className="h-[500px] w-[800px] row" />
       <div id="grid-canvas-container" className="col-start-3 bg-slate-100 flex justify-center items-center">
         <canvas id="canvas" className="h-[500px] w-[800px] row" />
       </div>

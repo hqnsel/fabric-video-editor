@@ -115,10 +115,14 @@ export class Store {
         shapeType: shapeObject.type,
         fill: shapeObject.fill
       },
-      fabricObject: shapeObject.fabricObject
+      fabricObject: shapeObject
     };
   
     this.editorElements.push(newShape);
+    if (this.canvas) {
+      this.canvas.add(shapeObject);
+      this.canvas.renderAll();
+    }
     this.refreshElements();
   }
 
