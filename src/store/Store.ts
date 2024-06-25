@@ -94,6 +94,46 @@ export class Store {
   }
 
   addShapeResource(shapeObject) {
+    let fabricObject;
+    switch (shapeObject.type) {
+      case 'rect':
+      case 'rectangle':
+      case 'square':
+        fabricObject = new fabric.Rect({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          width: shapeObject.width,
+          height: shapeObject.height,
+          fill: shapeObject.fill,
+        });
+        break;
+      case 'circle':
+        fabricObject = new fabric.Circle({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          radius: shapeObject.radius,
+          fill: shapeObject.fill,
+        });
+        break;
+      case 'triangle':
+        fabricObject = new fabric.Triangle({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          width: shapeObject.width,
+          height: shapeObject.height,
+          fill: shapeObject.fill,
+        });
+        break;
+      default:
+        console.error('Unsupported shape type:', shapeObject.type);
+        return;
+    }
+  
+    fabricObject.set({
+      selectable: true,
+      hasControls: true,
+    });
+  
     const newShape = {
       id: getUid(),
       name: `Shape ${this.editorElements.length + 1}`,
@@ -115,11 +155,15 @@ export class Store {
         shapeType: shapeObject.type,
         fill: shapeObject.fill
       },
-      fabricObject: null
+      fabricObject: fabricObject
     };
   
     this.editorElements.push(newShape);
-    this.refreshElements();
+    if (this.canvas) {
+      this.canvas.add(fabricObject);
+      this.canvas.setActiveObject(fabricObject);
+      this.canvas.renderAll();
+    }
     this.setSelectedElement(newShape);
   }
 
