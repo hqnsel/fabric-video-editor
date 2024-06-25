@@ -24,124 +24,72 @@ export const EditorWithStore = () => {
 export const Editor = observer(() => {
   const store = React.useContext(StoreContext);
 
-useEffect(() => {
-  const initCanvas = () => {
-    const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-    if (!canvasElement) {
-      console.error("Canvas element not found");
-      return;
-    }
-    const canvas = new fabric.Canvas(canvasElement, {
-      height: 500,
-      width: 800,
-      backgroundColor: "#ededed",
-      selection: true,
-      preserveObjectStacking: true,
-    });
-  
-    fabric.Object.prototype.transparentCorners = false;
-    fabric.Object.prototype.cornerColor = "#00a0f5";
-    fabric.Object.prototype.cornerStyle = "circle";
-    fabric.Object.prototype.cornerStrokeColor = "#0063d8";
-    fabric.Object.prototype.cornerSize = 10;
-  
-    fabric.Object.prototype.setControlsVisibility({
-      mt: true, mb: true, ml: true, mr: true,
-      tl: true, tr: true, bl: true, br: true,
-    });
-  
-    canvas.on("mouse:down", function (e) {
-      if (!e.target) {
-        store.setSelectedElement(null);
+  useEffect(() => {
+    const initCanvas = () => {
+      const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+      if (!canvasElement) {
+        console.error("Canvas element not found");
+        return;
       }
-    });
-  
-    canvas.on("object:modified", function(e) {
-      if (e.target && store.selectedElement) {
-        const updatedElement = {
-          ...store.selectedElement,
-          placement: {
-            x: e.target.left || 0,
-            y: e.target.top || 0,
-            width: e.target.getScaledWidth(),
-            height: e.target.getScaledHeight(),
-            rotation: e.target.angle || 0,
-            scaleX: e.target.scaleX || 1,
-            scaleY: e.target.scaleY || 1,
-          }
-        };
-        store.updateEditorElement(updatedElement);
-      }
-    });
-  
-    store.setCanvas(canvas);
-  
-    const rect = new fabric.Rect({
-      left: 100,
-      top: 100,
-      fill: 'red',
-      width: 50,
-      height: 50,
-      selectable: true,
-      hasControls: true,
-    });
-    canvas.add(rect);
-
-    store.addEditorElement({
-      id: 'placeholder-rect',
-      name: 'Placeholder Rectangle',
-      type: 'shape',
-      placement: {
-        x: rect.left || 0,
-        y: rect.top || 0,
-        width: rect.width || 50,
-        height: rect.height || 50,
-        rotation: rect.angle || 0,
-        scaleX: rect.scaleX || 1,
-        scaleY: rect.scaleY || 1,
-      },
-      timeFrame: {
-        start: 0,
-        end: store.maxTime,
-      },
-      properties: {
-        shapeType: 'rectangle',
-        fill: 'red',
-      },
-      fabricObject: rect,
-    });
-  
-    const animate = () => {
-      anime({
-        targets: rect,
-        left: 400,
-        easing: 'easeInOutQuad',
-        loop: true,
-        direction: 'alternate',
-        duration: 3000,
-        update: function() {
-          rect.setCoords();
-          canvas.requestRenderAll();
+      const canvas = new fabric.Canvas(canvasElement, {
+        height: 500,
+        width: 800,
+        backgroundColor: "#ededed",
+        selection: true,
+        preserveObjectStacking: true,
+      });
+    
+      fabric.Object.prototype.transparentCorners = false;
+      fabric.Object.prototype.cornerColor = "#00a0f5";
+      fabric.Object.prototype.cornerStyle = "circle";
+      fabric.Object.prototype.cornerStrokeColor = "#0063d8";
+      fabric.Object.prototype.cornerSize = 10;
+    
+      fabric.Object.prototype.setControlsVisibility({
+        mt: true, mb: true, ml: true, mr: true,
+        tl: true, tr: true, bl: true, br: true,
+      });
+    
+      canvas.on("mouse:down", function (e) {
+        if (!e.target) {
+          store.setSelectedElement(null);
         }
       });
+    
+      canvas.on("object:modified", function(e) {
+        if (e.target && store.selectedElement) {
+          const updatedElement = {
+            ...store.selectedElement,
+            placement: {
+              x: e.target.left || 0,
+              y: e.target.top || 0,
+              width: e.target.getScaledWidth(),
+              height: e.target.getScaledHeight(),
+              rotation: e.target.angle || 0,
+              scaleX: e.target.scaleX || 1,
+              scaleY: e.target.scaleY || 1,
+            }
+          };
+          store.updateEditorElement(updatedElement);
+        }
+      });
+    
+      store.setCanvas(canvas);
+    
+      const render = () => {
+        canvas.requestRenderAll();
+        fabric.util.requestAnimFrame(render);
+      };
+    
+      render();
+    
+      return () => {
+        canvas.dispose();
+      };
     };
   
-    animate();
-  
-    const render = () => {
-      canvas.requestRenderAll();
-      fabric.util.requestAnimFrame(render);
-    };
-  
-    render();
-  
-    return () => {
-      canvas.dispose();
-    };
-  };
-
-  setTimeout(initCanvas, 100);
-}, [store]);
+    setTimeout(initCanvas, 100);
+  }, [store]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
       <div className="tile row-span-2 flex flex-col">
