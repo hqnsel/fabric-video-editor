@@ -94,12 +94,41 @@ export class Store {
   }
 
   addShapeResource(shapeObject) {
-    const fabricObject = new fabric[shapeObject.type.charAt(0).toUpperCase() + shapeObject.type.slice(1)]({
-      left: shapeObject.left,
-      top: shapeObject.top,
-      width: shapeObject.width || shapeObject.radius * 2,
-      height: shapeObject.height || shapeObject.radius * 2,
-      fill: shapeObject.fill,
+    let fabricObject;
+    switch (shapeObject.type) {
+      case 'rect':
+      case 'rectangle':
+        fabricObject = new fabric.Rect({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          width: shapeObject.width,
+          height: shapeObject.height,
+          fill: shapeObject.fill,
+        });
+        break;
+      case 'circle':
+        fabricObject = new fabric.Circle({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          radius: shapeObject.radius,
+          fill: shapeObject.fill,
+        });
+        break;
+      case 'triangle':
+        fabricObject = new fabric.Triangle({
+          left: shapeObject.left,
+          top: shapeObject.top,
+          width: shapeObject.width,
+          height: shapeObject.height,
+          fill: shapeObject.fill,
+        });
+        break;
+      default:
+        console.error('Unsupported shape type:', shapeObject.type);
+        return;
+    }
+  
+    fabricObject.set({
       selectable: true,
       hasControls: true,
     });
@@ -951,7 +980,7 @@ export class Store {
             let shapeObject;
             switch (element.properties.shapeType) {
               case 'rectangle':
-              case 'square':
+              case 'rect':
                 shapeObject = new fabric.Rect(shapeProps);
                 break;
               case 'circle':
@@ -1014,8 +1043,9 @@ export class Store {
       this.refreshAnimations();
       this.updateTimeTo(this.currentTimeInMs);
       store.canvas.renderAll();
+    }
   }
-
+}
 
 export function isEditorAudioElement(
   element: EditorElement
