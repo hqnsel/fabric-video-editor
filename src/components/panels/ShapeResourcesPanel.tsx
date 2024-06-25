@@ -3,7 +3,7 @@ import React, { useContext, useState } from "react";
 import { observer } from "mobx-react";
 import { StoreContext } from "@/store";
 import { fabric } from 'fabric';
-import ShapeResource  from "../entity/ShapeResource";
+import ShapeResource from "../entity/ShapeResource";
 
 export const ShapeResourcesPanel = observer(() => {
   const [selectedShape, setSelectedShape] = useState('rectangle');

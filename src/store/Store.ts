@@ -89,29 +89,16 @@ export class Store {
   }
 
   addShapeResource(shapeObject) {
-    // Basic validation to ensure necessary properties are present
-    if (!shapeObject.type || !shapeObject.left || !shapeObject.top || !shapeObject.fill) {
-      console.error("Missing properties in shapeObject", shapeObject);
-      return; // Exit if the shape object is not valid
-    }
-  
-    const dimensions = shapeObject.type === 'circle' ? {
-      width: shapeObject.radius * 2,
-      height: shapeObject.radius * 2
-    } : {
-      width: shapeObject.width,
-      height: shapeObject.height
-    };
-  
     const newShape = {
-      id: getUid(),  // Ensure to create unique IDs for new elements
-      name: `Shape ${this.editorElements.length + 1}`,  // Customize as per your use case
-      type: shapeObject.type,  // 'circle', 'rectangle', etc.
+      id: getUid(),
+      name: `Shape ${this.editorElements.length + 1}`,
+      type: "shape",
       placement: {
         x: shapeObject.left,
         y: shapeObject.top,
-        ...dimensions,
-        rotation: 0,  // Default rotation
+        width: shapeObject.width || shapeObject.radius * 2,
+        height: shapeObject.height || shapeObject.radius * 2,
+        rotation: 0,
         scaleX: 1,
         scaleY: 1,
       },
@@ -120,13 +107,14 @@ export class Store {
         end: this.maxTime,
       },
       properties: {
-        fill: shapeObject.fill  // Additional properties as needed
+        shapeType: shapeObject.type,
+        fill: shapeObject.fill
       },
-      fabricObject: shapeObject.fabricObject  // Ensure this is the fabric object
+      fabricObject: shapeObject.fabricObject
     };
   
     this.editorElements.push(newShape);
-    this.refreshElements();  // Make sure this re-renders the elements where necessary
+    this.refreshElements();
   }
 
   addVideoResource(video: string) {
@@ -734,7 +722,10 @@ export class Store {
 
   refreshElements() {
     const store = this;
-    if (!store.canvas) return;
+    if (!store.canvas) { 
+      console.error("Canvas is not initialized");
+      return;
+    }
     const canvas = store.canvas;
     store.canvas.remove(...store.canvas.getObjects());
     for (let index = 0; index < store.editorElements.length; index++) {
@@ -924,37 +915,41 @@ export class Store {
           });
           break;
         }
-        case "shape":
-        const shapeProps = {
-          left: element.placement.x,
-          top: element.placement.y,
-          angle: element.placement.rotation,
-          fill: element.properties.fill,
-          selectable: true,
-          scaleX: element.placement.scaleX,
-          scaleY: element.placement.scaleY,
-        };
-        let shapeObject;
-        switch (element.properties.shapeType) {
-          case 'rectangle':
-            shapeObject = new fabric.Rect({ ...shapeProps, width: element.placement.width, height: element.placement.height });
-            break;
-          case 'square':  // Treat square the same as rectangle
-            shapeObject = new fabric.Rect({ ...shapeProps, width: element.placement.width, height: element.placement.height });
-            break;
-          case 'circle':
-            shapeObject = new fabric.Circle({ ...shapeProps, radius: element.placement.width / 2 });
-            break;
-          case 'triangle':
-            shapeObject = new fabric.Triangle({ ...shapeProps, width: element.placement.width, height: element.placement.height });
-            break;
-          default:
-            console.error("Unsupported shape type:", element.properties.shapeType);
-            throw new Error("Not implemented: " + element.properties.shapeType);
+        case "shape": {
+          const shapeProps = {
+            left: element.placement.x,
+            top: element.placement.y,
+            width: element.placement.width,
+            height: element.placement.height,
+            angle: element.placement.rotation,
+            fill: element.properties.fill,
+            selectable: true,
+            scaleX: element.placement.scaleX,
+            scaleY: element.placement.scaleY,
+          };
+          let shapeObject;
+          switch (element.properties.shapeType) {
+            case 'rectangle':
+            case 'square':
+              shapeObject = new fabric.Rect(shapeProps);
+              break;
+            case 'circle':
+              shapeObject = new fabric.Circle({
+                ...shapeProps,
+                radius: element.placement.width / 2,
+              });
+              break;
+            case 'triangle':
+              shapeObject = new fabric.Triangle(shapeProps);
+              break;
+            default:
+              console.error("Unsupported shape type:", element.properties.shapeType);
+              continue; // Skip this element and continue with the next one
+          }
+          element.fabricObject = shapeObject;
+          canvas.add(shapeObject);
+          break;
         }
-        element.fabricObject = shapeObject;
-        canvas.add(shapeObject);
-        break;
         default:
           console.error("Unhandled element type:", element.type); 
           throw new Error("Not implemented: " + element.type);
