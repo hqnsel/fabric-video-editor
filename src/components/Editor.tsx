@@ -61,13 +61,13 @@ export const Editor = observer(() => {
           const updatedElement = {
             ...store.selectedElement,
             placement: {
-              x: e.target.left || 0,
-              y: e.target.top || 0,
+              x: e.target.left ?? store.selectedElement.placement.x,
+              y: e.target.top ?? store.selectedElement.placement.y,
               width: e.target.getScaledWidth(),
               height: e.target.getScaledHeight(),
-              rotation: e.target.angle || 0,
-              scaleX: e.target.scaleX || 1,
-              scaleY: e.target.scaleY || 1,
+              rotation: e.target.angle ?? store.selectedElement.placement.rotation,
+              scaleX: e.target.scaleX ?? store.selectedElement.placement.scaleX,
+              scaleY: e.target.scaleY ?? store.selectedElement.placement.scaleY,
             }
           };
           store.updateEditorElement(updatedElement);
@@ -88,7 +88,7 @@ export const Editor = observer(() => {
       };
     };
   
-    setTimeout(initCanvas, 100);
+    initCanvas();
   }, [store]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">

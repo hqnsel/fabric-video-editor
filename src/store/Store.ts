@@ -94,45 +94,6 @@ export class Store {
   }
 
   addShapeResource(shapeObject) {
-    let fabricObject;
-    switch (shapeObject.type) {
-      case 'rect':
-      case 'rectangle':
-        fabricObject = new fabric.Rect({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          width: shapeObject.width,
-          height: shapeObject.height,
-          fill: shapeObject.fill,
-        });
-        break;
-      case 'circle':
-        fabricObject = new fabric.Circle({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          radius: shapeObject.radius,
-          fill: shapeObject.fill,
-        });
-        break;
-      case 'triangle':
-        fabricObject = new fabric.Triangle({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          width: shapeObject.width,
-          height: shapeObject.height,
-          fill: shapeObject.fill,
-        });
-        break;
-      default:
-        console.error('Unsupported shape type:', shapeObject.type);
-        return;
-    }
-  
-    fabricObject.set({
-      selectable: true,
-      hasControls: true,
-    });
-  
     const newShape = {
       id: getUid(),
       name: `Shape ${this.editorElements.length + 1}`,
@@ -154,15 +115,12 @@ export class Store {
         shapeType: shapeObject.type,
         fill: shapeObject.fill
       },
-      fabricObject: fabricObject
+      fabricObject: null
     };
   
     this.editorElements.push(newShape);
-    if (this.canvas) {
-      this.canvas.add(fabricObject);
-      this.canvas.renderAll();
-    }
     this.refreshElements();
+    this.setSelectedElement(newShape);
   }
 
   addVideoResource(video: string) {
@@ -971,11 +929,6 @@ export class Store {
               selectable: true,
               hasControls: true,
               hasBorders: true,
-              lockMovementX: false,
-              lockMovementY: false,
-              lockRotation: false,
-              lockScalingX: false,
-              lockScalingY: false,
             };
             let shapeObject;
             switch (element.properties.shapeType) {
@@ -994,36 +947,30 @@ export class Store {
                 break;
               default:
                 console.error("Unsupported shape type:", element.properties.shapeType);
-                break;
+                return;
             }
-            if (shapeObject) {
-              element.fabricObject = shapeObject;
-              canvas.add(shapeObject);
             
-              shapeObject.on('modified', function(e) {
-                const target = e.target;
-                const newPlacement: Placement = {
-                  x: target.left,
-                  y: target.top,
-                  width: target.width * target.scaleX,
-                  height: target.height * target.scaleY,
-                  rotation: target.angle,
-                  scaleX: 1,
-                  scaleY: 1,
-                };
-                target.set({
-                  width: newPlacement.width,
-                  height: newPlacement.height,
-                  scaleX: 1,
-                  scaleY: 1,
-                });
-                const newElement = {
-                  ...element,
-                  placement: newPlacement,
-                };
-                store.updateEditorElement(newElement);
-              });
-            }
+            element.fabricObject = shapeObject;
+            canvas.add(shapeObject);
+          
+            shapeObject.on('modified', function(e) {
+              const target = e.target;
+              const newPlacement: Placement = {
+                x: target.left ?? element.placement.x,
+                y: target.top ?? element.placement.y,
+                width: target.width ?? element.placement.width,
+                height: target.height ?? element.placement.height,
+                rotation: target.angle ?? element.placement.rotation,
+                scaleX: target.scaleX ?? element.placement.scaleX,
+                scaleY: target.scaleY ?? element.placement.scaleY,
+              };
+              const newElement = {
+                ...element,
+                placement: newPlacement,
+              };
+              store.updateEditorElement(newElement);
+            });
+          
             break;
           }
           default:
