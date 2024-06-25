@@ -801,7 +801,7 @@ export class Store {
 
   refreshElements() {
     const store = this;
-    if (!store.canvas || !store.canvas.getContext()) { 
+    if (!store.canvas || !store.canvas.getContext() || typeof store.canvas.renderAll !== 'function') { 
       console.error("Canvas is not initialized or context is not available");
       return;
     }
@@ -1042,14 +1042,10 @@ if (canvas) {
       }
     }
 
-    const selectedEditorElement = store.selectedElement;
-    if (selectedEditorElement && selectedEditorElement.fabricObject) {
-      canvas.setActiveObject(selectedEditorElement.fabricObject);
-    }
-
     this.refreshAnimations();
     this.updateTimeTo(this.currentTimeInMs);
     canvas.renderAll();
+    canvas.forEachObject(obj => obj.setCoords());
     }
   }
 }
