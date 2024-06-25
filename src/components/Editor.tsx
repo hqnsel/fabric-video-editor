@@ -29,28 +29,57 @@ export const Editor = observer(() => {
       height: 500,
       width: 800,
       backgroundColor: "#ededed",
+      selection: true, // Enable group selection
     });
     fabric.Object.prototype.transparentCorners = false;
     fabric.Object.prototype.cornerColor = "#00a0f5";
     fabric.Object.prototype.cornerStyle = "circle";
     fabric.Object.prototype.cornerStrokeColor = "#0063d8";
     fabric.Object.prototype.cornerSize = 10;
+  
+    // Enable all controls
+    fabric.Object.prototype.setControlsVisibility({
+      mt: true, mb: true, ml: true, mr: true,
+      tl: true, tr: true, bl: true, br: true,
+    });
+  
     // canvas mouse down without target should deselect active object
     canvas.on("mouse:down", function (e) {
       if (!e.target) {
         store.setSelectedElement(null);
       }
     });
-
+  
+    // Update store when object is modified
+    canvas.on("object:modified", function(e) {
+      if (e.target && store.selectedElement) {
+        const updatedElement = {
+          ...store.selectedElement,
+          placement: {
+            x: e.target.left || 0,
+            y: e.target.top || 0,
+            width: e.target.width || 0,
+            height: e.target.height || 0,
+            rotation: e.target.angle || 0,
+            scaleX: e.target.scaleX || 1,
+            scaleY: e.target.scaleY || 1,
+          }
+        };
+        store.updateEditorElement(updatedElement);
+      }
+    });
+  
     store.setCanvas(canvas);
-
+  
     // Adding the rectangle and applying the animation
     const rect = new fabric.Rect({
       left: 100,
       top: 100,
       fill: 'red',
       width: 50,
-      height: 50
+      height: 50,
+      selectable: true,
+      hasControls: true,
     });
     canvas.add(rect);
     anime({
@@ -61,11 +90,11 @@ export const Editor = observer(() => {
       direction: 'alternate',
       duration: 3000,
       update: function() {
-        rect.setCoords(); // Update fabric object position during animation
-        canvas.requestRenderAll(); // Re-render canvas to reflect changes
+        rect.setCoords();
+        canvas.requestRenderAll();
       }
     });
-
+  
     fabric.util.requestAnimFrame(function render() {
       canvas.renderAll();
       fabric.util.requestAnimFrame(render);
