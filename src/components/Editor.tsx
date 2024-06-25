@@ -29,28 +29,27 @@ export const Editor = observer(() => {
       height: 500,
       width: 800,
       backgroundColor: "#ededed",
-      selection: true, // Enable group selection
+      selection: true,
+      preserveObjectStacking: true,
     });
+  
     fabric.Object.prototype.transparentCorners = false;
     fabric.Object.prototype.cornerColor = "#00a0f5";
     fabric.Object.prototype.cornerStyle = "circle";
     fabric.Object.prototype.cornerStrokeColor = "#0063d8";
     fabric.Object.prototype.cornerSize = 10;
   
-    // Enable all controls
     fabric.Object.prototype.setControlsVisibility({
       mt: true, mb: true, ml: true, mr: true,
       tl: true, tr: true, bl: true, br: true,
     });
   
-    // canvas mouse down without target should deselect active object
     canvas.on("mouse:down", function (e) {
       if (!e.target) {
         store.setSelectedElement(null);
       }
     });
   
-    // Update store when object is modified
     canvas.on("object:modified", function(e) {
       if (e.target && store.selectedElement) {
         const updatedElement = {
@@ -58,8 +57,8 @@ export const Editor = observer(() => {
           placement: {
             x: e.target.left || 0,
             y: e.target.top || 0,
-            width: e.target.width || 0,
-            height: e.target.height || 0,
+            width: e.target.getScaledWidth(),
+            height: e.target.getScaledHeight(),
             rotation: e.target.angle || 0,
             scaleX: e.target.scaleX || 1,
             scaleY: e.target.scaleY || 1,
@@ -71,7 +70,6 @@ export const Editor = observer(() => {
   
     store.setCanvas(canvas);
   
-    // Adding the rectangle and applying the animation
     const rect = new fabric.Rect({
       left: 100,
       top: 100,
@@ -82,24 +80,35 @@ export const Editor = observer(() => {
       hasControls: true,
     });
     canvas.add(rect);
-    anime({
-      targets: rect,
-      left: 400,
-      easing: 'easeInOutQuad',
-      loop: true,
-      direction: 'alternate',
-      duration: 3000,
-      update: function() {
-        rect.setCoords();
-        canvas.requestRenderAll();
-      }
-    });
   
-    fabric.util.requestAnimFrame(function render() {
-      canvas.renderAll();
+    const animate = () => {
+      anime({
+        targets: rect,
+        left: 400,
+        easing: 'easeInOutQuad',
+        loop: true,
+        direction: 'alternate',
+        duration: 3000,
+        update: function() {
+          rect.setCoords();
+          canvas.requestRenderAll();
+        }
+      });
+    };
+  
+    animate();
+  
+    const render = () => {
+      canvas.requestRenderAll();
       fabric.util.requestAnimFrame(render);
-    });
-  }, []);
+    };
+  
+    render();
+  
+    return () => {
+      canvas.dispose();
+    };
+  }, [store]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
       <div className="tile row-span-2 flex flex-col">
