@@ -65,6 +65,11 @@ export class Store {
     this.canvas = canvas;
     if (canvas) {
       canvas.backgroundColor = this.backgroundColor;
+      canvas.selection = true; // Enable object selection
+      canvas.hoverCursor = 'move';
+      canvas.moveCursor = 'move';
+      canvas.defaultCursor = 'default';
+      canvas.rotationCursor = 'crosshair';
     }
   }
 
@@ -924,6 +929,13 @@ export class Store {
             angle: element.placement.rotation,
             fill: element.properties.fill,
             selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockRotation: false,
+            lockScalingX: false,
+            lockScalingY: false,
             scaleX: element.placement.scaleX,
             scaleY: element.placement.scaleY,
           };
