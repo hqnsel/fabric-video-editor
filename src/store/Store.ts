@@ -494,29 +494,33 @@ export class Store {
       });
     }
   }
+
   updateTimeTo(newTime: number) {
     this.setCurrentTimeInMs(newTime);
     this.animationTimeLine.seek(newTime);
     if (this.canvas) {
       this.canvas.backgroundColor = this.backgroundColor;
     }
-    this.editorElements.forEach(
-      e => {
-        if (!e.fabricObject) return;
-        const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
-        e.fabricObject.visible = isInside;
-      }
-    )
+    this.updateElementsVisibility(newTime);
+    this.canvas?.renderAll();
+  }
+  
+  updateElementsVisibility(newTime: number) {
+    this.editorElements.forEach(e => {
+      if (!e.fabricObject) return;
+      const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
+      e.fabricObject.visible = isInside;
+    });
   }
 
-  handleSeek(seek: number) {
-    if (this.playing) {
-      this.setPlaying(false);
-    }
-    this.updateTimeTo(seek);
-    this.updateVideoElements();
-    this.updateAudioElements();
+handleSeek(seek: number) {
+  if (this.playing) {
+    this.setPlaying(false);
   }
+  this.updateTimeTo(seek);
+  this.updateVideoElements();
+  this.updateAudioElements();
+}
 
   addVideo(index: number) {
     const videoElement = document.getElementById(`video-${index}`)
