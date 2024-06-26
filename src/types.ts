@@ -106,5 +106,19 @@ export type MenuOption =
   | "Image"
   | "Export"
   | "Animation"
+  | "Shape"
   | "Effect"
   | "Fill";
+
+  export type ShapeEditorElement = EditorElement & {
+    type: 'shape';
+    properties: {
+      shapeType: 'rectangle' | 'circle' | 'triangle' | 'square';
+      fill: string;
+      stroke: string;
+      strokeWidth: number;
+      animation: 'none' | 'bounce' | 'float' | 'rotate' | 'circular' | 'square';
+      transitionDuration: number;
+      transitionColor: string;
+    };
+  };

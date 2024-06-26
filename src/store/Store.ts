@@ -2,8 +2,7 @@ import { makeAutoObservable } from 'mobx';
 import { fabric } from 'fabric';
 import { getUid, isHtmlAudioElement, isHtmlImageElement, isHtmlVideoElement } from '@/utils';
 import anime, { get } from 'animejs';
-import { MenuOption, EditorElement, Animation, TimeFrame, VideoEditorElement, AudioEditorElement, Placement, ImageEditorElement, Effect, TextEditorElement } from '../types';
-import { FabricUitls } from '@/utils/fabric-utils';
+import { MenuOption, EditorElement, Animation, TimeFrame, VideoEditorElement, AudioEditorElement, Placement, ImageEditorElement, Effect, TextEditorElement, ShapeEditorElement } from '../types';import { FabricUitls } from '@/utils/fabric-utils';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 
@@ -114,56 +113,11 @@ export class Store {
   }
 
   addShapeResource(shapeObject) {
-    let fabricObject;
-    switch (shapeObject.type) {
-      case 'rect':
-      case 'rectangle':
-      case 'square':
-        fabricObject = new fabric.Rect({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          width: shapeObject.width,
-          height: shapeObject.height,
-          fill: shapeObject.fill,
-        });
-        break;
-      case 'circle':
-        fabricObject = new fabric.Circle({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          radius: shapeObject.radius,
-          fill: shapeObject.fill,
-        });
-        break;
-      case 'triangle':
-        fabricObject = new fabric.Triangle({
-          left: shapeObject.left,
-          top: shapeObject.top,
-          width: shapeObject.width,
-          height: shapeObject.height,
-          fill: shapeObject.fill,
-        });
-        break;
-      default:
-        console.error('Unsupported shape type:', shapeObject.type);
-        return;
-    }
-  
-    fabricObject.set({
-      selectable: true,
-      hasControls: true,
-      hasBorders: true,
-      lockMovementX: false,
-      lockMovementY: false,
-      lockRotation: false,
-      lockScalingX: false,
-      lockScalingY: false,
-    });
-  
-    const newShape = {
-      id: getUid(),
+    const id = getUid();
+    const element: ShapeEditorElement = {
+      id,
       name: `Shape ${this.editorElements.length + 1}`,
-      type: "shape",
+      type: 'shape',
       placement: {
         x: shapeObject.left,
         y: shapeObject.top,
@@ -179,19 +133,25 @@ export class Store {
       },
       properties: {
         shapeType: shapeObject.type,
-        fill: shapeObject.fill
+        fill: shapeObject.fill,
+        stroke: shapeObject.stroke,
+        strokeWidth: shapeObject.strokeWidth,
       },
-      fabricObject: fabricObject
     };
   
-    this.editorElements.push(newShape);
-    if (this.canvas) {
-      this.canvas.add(fabricObject);
-      this.canvas.setActiveObject(fabricObject);
-      this.canvas.renderAll();
+    this.addEditorElement(element);
+  
+    if (shapeObject.animation !== 'none') {
+      const animation: Animation = {
+        targetId: id,
+        type: shapeObject.animation,
+        duration: shapeObject.transitionDuration,
+        properties: {
+          direction: 'left', // Default direction, you can modify this as needed
+        },
+      };
+      this.addAnimation(animation);
     }
-    this.setSelectedElement(newShape);
-    this.refreshElements();
   }
 
   addVideoResource(video: string) {
@@ -229,6 +189,35 @@ export class Store {
       }
       fabricObject.clipPath = undefined;
       switch (animation.type) {
+      case "bounce":
+        this.animationTimeLine.add({
+          translateY: 20,
+          direction: 'alternate',
+          loop: true,
+          easing: 'easeInOutQuad',
+          duration: animation.duration,
+          targets: fabricObject,
+        }, editorElement.timeFrame.start);
+        break;
+      case "float":
+        this.animationTimeLine.add({
+          translateY: 10,
+          direction: 'alternate',
+          loop: true,
+          easing: 'easeInOutSine',
+          duration: animation.duration,
+          targets: fabricObject,
+        }, editorElement.timeFrame.start);
+        break;
+      case "rotate":
+        this.animationTimeLine.add({
+          rotate: '360deg',
+          loop: true,
+          easing: 'linear',
+          duration: animation.duration,
+          targets: fabricObject,
+        }, editorElement.timeFrame.start);
+        break;
         case "fadeIn": {
           this.animationTimeLine.add({
             opacity: [0, 1],
@@ -1028,25 +1017,50 @@ handleSeek(seek: number) {
       scaleY: element.placement.scaleY,
       angle: element.placement.rotation,
       fill: element.properties.fill,
+      stroke: element.properties.stroke,
+      strokeWidth: element.properties.strokeWidth,
     };
+  
+    let fabricObject: fabric.Object | null = null;
+  
     switch (element.properties.shapeType) {
       case 'rectangle':
-      case 'rect':
-        return new fabric.Rect(shapeProps);
+      case 'square':
+        fabricObject = new fabric.Rect(shapeProps);
+        break;
       case 'circle':
-        return new fabric.Circle({
+        fabricObject = new fabric.Circle({
           ...shapeProps,
           radius: element.placement.width / 2,
         });
+        break;
       case 'triangle':
-        return new fabric.Triangle(shapeProps);
+        fabricObject = new fabric.Triangle(shapeProps);
+        break;
       default:
         console.error("Unsupported shape type:", element.properties.shapeType);
         return null;
     }
-  } 
+  
+    if (fabricObject && element.properties.animation !== 'none') {
+      this.applyAnimation(fabricObject, element.properties.animation);
+    }
+  
+    return fabricObject;
+  }
+  
+  private applyAnimation(object: fabric.Object, animationType: string) {
+    const animation: Animation = {
+      targetId: object.name as string,
+      type: animationType,
+      duration: 2000, // Default duration, you can adjust this
+      properties: {
+        direction: 'left', // Default direction, you can modify this as needed
+      },
+    };
+    this.addAnimation(animation);
+  }
 }
-
 
 export function isEditorAudioElement(
   element: EditorElement

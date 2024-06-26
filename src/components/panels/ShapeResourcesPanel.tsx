@@ -3,9 +3,16 @@ import React, { useContext, useState } from "react";
 import { observer } from "mobx-react";
 import { StoreContext } from "@/store";
 import ShapeResource from "../entity/ShapeResource";
+import anime from 'animejs';
 
 export const ShapeResourcesPanel = observer(() => {
   const [selectedShape, setSelectedShape] = useState('rectangle');
+  const [fillColor, setFillColor] = useState('red');
+  const [outlineColor, setOutlineColor] = useState('black');
+  const [lineWidth, setLineWidth] = useState(1);
+  const [selectedAnimation, setSelectedAnimation] = useState('none');
+  const [transitionDuration, setTransitionDuration] = useState(1000);
+  const [transitionColor, setTransitionColor] = useState('blue');
   const store = useContext(StoreContext);
   const canvas = store.canvas;
 
@@ -17,12 +24,17 @@ export const ShapeResourcesPanel = observer(() => {
   
     let shapeObject = {
       type: selectedShape,
-      fill: 'red', // Default fill color
-      left: 100, // Default position
+      fill: fillColor,
+      stroke: outlineColor,
+      strokeWidth: lineWidth,
+      left: 100,
       top: 100,
       width: 80,
       height: 40,
-      radius: 30, // Only used for circle
+      radius: 30,
+      animation: selectedAnimation,
+      transitionDuration,
+      transitionColor,
     };
   
     if (selectedShape === 'circle') {
@@ -48,6 +60,19 @@ export const ShapeResourcesPanel = observer(() => {
           <option value="rectangle">Rectangle</option>
           <option value="triangle">Triangle</option>
         </select>
+        <input type="color" value={fillColor} onChange={e => setFillColor(e.target.value)} />
+        <input type="color" value={outlineColor} onChange={e => setOutlineColor(e.target.value)} />
+        <input type="number" value={lineWidth} onChange={e => setLineWidth(Number(e.target.value))} min="1" max="10" />
+        <select value={selectedAnimation} onChange={e => setSelectedAnimation(e.target.value)}>
+          <option value="none">None</option>
+          <option value="bounce">Bounce</option>
+          <option value="float">Float</option>
+          <option value="rotate">Rotate</option>
+          <option value="circular">Circular Motion</option>
+          <option value="square">Square Motion</option>
+        </select>
+        <input type="number" value={transitionDuration} onChange={e => setTransitionDuration(Number(e.target.value))} min="100" max="5000" step="100" />
+        <input type="color" value={transitionColor} onChange={e => setTransitionColor(e.target.value)} />
         <button onClick={handleAddShape}>Add Shape</button>
       </div>
       <div>
