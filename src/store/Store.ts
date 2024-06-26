@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import { fabric } from 'fabric';
 import { getUid, isHtmlAudioElement, isHtmlImageElement, isHtmlVideoElement } from '@/utils';
-import anime, { get } from 'animejs';
+import anime from 'animejs';
 import { MenuOption, EditorElement, Animation, TimeFrame, VideoEditorElement, AudioEditorElement, Placement, ImageEditorElement, Effect, TextEditorElement, ShapeEditorElement } from '../types';import { FabricUitls } from '@/utils/fabric-utils';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
@@ -74,6 +74,7 @@ export class Store {
 
   setCurrentTimeInMs(time: number) {
     this.currentKeyFrame = Math.floor(time / 1000 * this.fps);
+    this.animationTimeLine.seek(time);
   }
 
   setSelectedMenuOption(selectedMenuOption: MenuOption) {
@@ -118,39 +119,86 @@ export class Store {
       id,
       name: `Shape ${this.editorElements.length + 1}`,
       type: 'shape',
-      placement: {
-        x: shapeObject.left,
-        y: shapeObject.top,
-        width: shapeObject.width || shapeObject.radius * 2,
-        height: shapeObject.height || shapeObject.radius * 2,
-        rotation: 0,
-        scaleX: 1,
-        scaleY: 1,
-      },
+      placement: shapeObject.placement,
       timeFrame: {
         start: 0,
         end: this.maxTime,
       },
-      properties: {
-        shapeType: shapeObject.type,
-        fill: shapeObject.fill,
-        stroke: shapeObject.stroke,
-        strokeWidth: shapeObject.strokeWidth,
-      },
+      properties: shapeObject.properties,
     };
   
-    this.addEditorElement(element);
+    let fabricObject;
+    switch (shapeObject.properties.shapeType) {
+      case 'rectangle':
+      case 'square':
+        fabricObject = new fabric.Rect({
+          left: element.placement.x,
+          top: element.placement.y,
+          width: element.placement.width,
+          height: element.placement.height,
+          fill: element.properties.fill,
+          stroke: element.properties.stroke,
+          strokeWidth: element.properties.strokeWidth,
+        });
+        break;
+      case 'circle':
+        fabricObject = new fabric.Circle({
+          left: element.placement.x,
+          top: element.placement.y,
+          radius: element.placement.width / 2,
+          fill: element.properties.fill,
+          stroke: element.properties.stroke,
+          strokeWidth: element.properties.strokeWidth,
+        });
+        break;
+      case 'triangle':
+        fabricObject = new fabric.Triangle({
+          left: element.placement.x,
+          top: element.placement.y,
+          width: element.placement.width,
+          height: element.placement.height,
+          fill: element.properties.fill,
+          stroke: element.properties.stroke,
+          strokeWidth: element.properties.strokeWidth,
+        });
+        break;
+    }
   
-    if (shapeObject.animation !== 'none') {
-      const animation: Animation = {
-        targetId: id,
-        type: shapeObject.animation,
-        duration: shapeObject.transitionDuration,
-        properties: {
-          direction: 'left', // Default direction, you can modify this as needed
-        },
-      };
-      this.addAnimation(animation);
+    if (fabricObject) {
+      fabricObject.set({
+        selectable: true,
+        hasControls: true,
+        hasBorders: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+      });
+  
+      element.fabricObject = fabricObject;
+      if (this.canvas) {
+        console.log('Created fabricObject:', fabricObject);
+        this.canvas.add(fabricObject);
+        this.canvas.renderAll();
+      }
+      this.editorElements.push(element);
+      this.setSelectedElement(element);
+  
+      console.log('Adding animation:', element.properties.animation);
+      if (element.properties.animation && element.properties.animation !== 'none') {
+        this.addAnimation({
+          targetId: id,
+          type: element.properties.animation,
+          duration: element.properties.transitionDuration || 2000,
+          properties: {
+            direction: 'left',
+          },
+        });
+      }
+  
+      this.refreshAnimations();
+      console.log('Animations after adding shape:', this.animations);
     }
   }
 
@@ -165,9 +213,12 @@ export class Store {
   }
 
   addAnimation(animation: Animation) {
-    this.animations = [...this.animations, animation];
+    console.log('Adding animation:', animation);
+    this.animations.push(animation);
+    console.log('Animations after adding:', this.animations);
     this.refreshAnimations();
   }
+
   updateAnimation(id: string, animation: Animation) {
     const index = this.animations.findIndex((a) => a.id === id);
     this.animations[index] = animation;
@@ -175,49 +226,56 @@ export class Store {
   }
 
   refreshAnimations() {
+    console.log('Refreshing animations');
     anime.remove(this.animationTimeLine);
     this.animationTimeLine = anime.timeline({
       duration: this.maxTime,
       autoplay: false,
+      update: () => {
+        if (this.canvas) {
+          this.canvas.renderAll();
+        }
+      }
     });
-    for (let i = 0; i < this.animations.length; i++) {
-      const animation = this.animations[i];
+  
+    for (const animation of this.animations) {
       const editorElement = this.editorElements.find((element) => element.id === animation.targetId);
       const fabricObject = editorElement?.fabricObject;
       if (!editorElement || !fabricObject) {
         continue;
       }
-      fabricObject.clipPath = undefined;
+  
+      const animationConfig = {
+        targets: fabricObject,
+        duration: animation.duration,
+        easing: 'linear',
+      };
       switch (animation.type) {
-      case "bounce":
-        this.animationTimeLine.add({
-          translateY: 20,
-          direction: 'alternate',
-          loop: true,
-          easing: 'easeInOutQuad',
-          duration: animation.duration,
-          targets: fabricObject,
-        }, editorElement.timeFrame.start);
-        break;
-      case "float":
-        this.animationTimeLine.add({
-          translateY: 10,
-          direction: 'alternate',
-          loop: true,
-          easing: 'easeInOutSine',
-          duration: animation.duration,
-          targets: fabricObject,
-        }, editorElement.timeFrame.start);
-        break;
-      case "rotate":
-        this.animationTimeLine.add({
-          rotate: '360deg',
-          loop: true,
-          easing: 'linear',
-          duration: animation.duration,
-          targets: fabricObject,
-        }, editorElement.timeFrame.start);
-        break;
+        case "bounce":
+          this.animationTimeLine.add({
+            ...animationConfig,
+            translateY: [0, 20],
+            direction: 'alternate',
+            loop: true,
+            easing: 'easeInOutQuad',
+          }, editorElement.timeFrame.start);
+          break;
+        case "float":
+          this.animationTimeLine.add({
+            ...animationConfig,
+            translateY: [0, 10],
+            direction: 'alternate',
+            loop: true,
+            easing: 'easeInOutSine',
+          }, editorElement.timeFrame.start);
+          break;
+        case "rotate":
+          this.animationTimeLine.add({
+            ...animationConfig,
+            rotate: ['0deg', '360deg'],
+            loop: true,
+          }, editorElement.timeFrame.start);
+          break;
         case "fadeIn": {
           this.animationTimeLine.add({
             opacity: [0, 1],
@@ -356,7 +414,7 @@ export class Store {
             keyframes.push({ scaleX: finalScaleX, scaleY: finalScaleY });
             keyframes.push({ scaleX: currentScaleX, scaleY: currentScaleY });
           }
-
+          console.log(`Adding ${animation.type} animation for element ${editorElement.id}`);
           this.animationTimeLine.add({
             duration: duration,
             targets: fabricObject,
@@ -369,6 +427,12 @@ export class Store {
         }
       }
     }
+    this.animationTimeLine.pause();
+    this.animationTimeLine.seek(this.currentTimeInMs);
+    if (this.playing) {
+      this.animationTimeLine.play();
+    }
+    console.log('Animations refreshed:', this.animationTimeLine);
   }
 
   removeAnimation(id: string) {
@@ -451,18 +515,38 @@ export class Store {
 
   setPlaying(playing: boolean) {
     this.playing = playing;
-    this.updateVideoElements();
-    this.updateAudioElements();
-    this.updateTextElements(this.currentTimeInMs);
-    this.updateShapeElements(this.currentTimeInMs);
     if (playing) {
       this.startedTime = Date.now();
-      this.startedTimePlay = this.currentTimeInMs
-      requestAnimationFrame(() => {
-        this.playFrames();
-      });
+      this.startedTimePlay = this.currentTimeInMs;
+      this.animationTimeLine.play();
+    } else {
+      this.animationTimeLine.pause();
     }
   }
+
+private animationFrameId: number | null = null;
+
+private startAnimation() {
+  const animate = (time: number) => {
+    const elapsed = time - this.startedTime;
+    const currentTime = this.startedTimePlay + elapsed;
+    this.updateTimeTo(currentTime);
+    this.canvas?.renderAll();
+    if (this.playing) {
+      this.animationFrameId = requestAnimationFrame(animate);
+    }
+  };
+  this.startedTime = performance.now();
+  this.startedTimePlay = this.currentTimeInMs;
+  this.animationFrameId = requestAnimationFrame(animate);
+}
+
+private stopAnimation() {
+  if (this.animationFrameId !== null) {
+    cancelAnimationFrame(this.animationFrameId);
+    this.animationFrameId = null;
+  }
+}
 
   startedTime = 0;
   startedTimePlay = 0;
@@ -486,13 +570,13 @@ export class Store {
 
   updateTimeTo(newTime: number) {
     this.setCurrentTimeInMs(newTime);
-    this.animationTimeLine.seek(newTime);
     if (this.canvas) {
       this.canvas.backgroundColor = this.backgroundColor;
     }
     this.updateElementsVisibility(newTime);
     this.updateVideoElements();
     this.updateAudioElements();
+    this.animationTimeLine.seek(newTime);
     this.canvas?.renderAll();
   }
   

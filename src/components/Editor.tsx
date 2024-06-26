@@ -73,6 +73,7 @@ export const Editor = observer(() => {
   
       store.setCanvas(canvas);
       store.refreshElements();
+      store.refreshAnimations();
     };
   
     initCanvas();
@@ -80,11 +81,30 @@ export const Editor = observer(() => {
     // Clean up function
     return () => {
       if (store.canvas) {
+        store.refreshAnimations();
         store.canvas.dispose();
         store.setCanvas(null);
       }
     };
   }, [store]);
+  useEffect(() => {
+    let animationId: number;
+    if (store.playing) {
+      const animate = () => {
+        const currentTime = Date.now() - store.startedTime + store.startedTimePlay;
+        store.updateTimeTo(currentTime);
+        animationId = requestAnimationFrame(animate);
+      };
+      store.startedTime = Date.now();
+      store.startedTimePlay = store.currentTimeInMs;
+      animationId = requestAnimationFrame(animate);
+    }
+    return () => {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+    };
+  }, [store.playing, store.canvas]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">
       <div className="tile row-span-2 flex flex-col">
@@ -92,7 +112,8 @@ export const Editor = observer(() => {
       </div>
       <div className="row-span-2 flex flex-col overflow-scroll">
         <Resources />
-      </div><canvas id="canvas" width="800" height="500" className="h-[500px] w-[800px] row" />
+      </div>
+      {/* <canvas id="canvas" width="800" height="500" className="h-[500px] w-[800px] row" /> */}
       <div id="grid-canvas-container" className="col-start-3 bg-slate-100 flex justify-center items-center">
         <canvas id="canvas" className="h-[500px] w-[800px] row" />
       </div>

@@ -24,31 +24,37 @@ export const ShapeResourcesPanel = observer(() => {
   
     let shapeObject = {
       type: selectedShape,
-      fill: fillColor,
-      stroke: outlineColor,
-      strokeWidth: lineWidth,
-      left: 100,
-      top: 100,
-      width: 80,
-      height: 40,
-      radius: 30,
-      animation: selectedAnimation,
-      transitionDuration,
-      transitionColor,
+      properties: {
+        shapeType: selectedShape,
+        fill: fillColor,
+        stroke: outlineColor,
+        strokeWidth: lineWidth,
+        animation: selectedAnimation,
+        transitionDuration,
+        transitionColor,
+      },
+      placement: {
+        x: 100,
+        y: 100,
+        width: selectedShape === 'circle' ? 60 : 80,
+        height: selectedShape === 'circle' ? 60 : 40,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      },
     };
-  
-    if (selectedShape === 'circle') {
-      delete shapeObject.width;
-      delete shapeObject.height;
-    } else if (selectedShape === 'square') {
-      shapeObject.width = 60;
-      shapeObject.height = 60;
+    
+    if (selectedShape === 'square') {
+      shapeObject.placement.width = 60;
+      shapeObject.placement.height = 60;
     } else if (selectedShape === 'triangle') {
-      shapeObject.width = 70;
-      shapeObject.height = 60;
+      shapeObject.placement.width = 70;
+      shapeObject.placement.height = 60;
     }
-  
+    console.log('Adding shape with animation:', selectedAnimation);
     store.addShapeResource(shapeObject);
+    console.log('Shape added:', shapeObject);
+    console.log('Current animations:', store.animations);
   };
 
   return (
