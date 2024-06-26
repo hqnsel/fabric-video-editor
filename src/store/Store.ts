@@ -435,6 +435,8 @@ export class Store {
     }
     this.updateVideoElements();
     this.updateAudioElements();
+    this.updateTextElements(this.currentTimeInMs);
+    this.updateShapeElements(this.currentTimeInMs);
     this.updateEditorElement(newEditorElement);
     this.refreshAnimations();
   }
@@ -462,6 +464,8 @@ export class Store {
     this.playing = playing;
     this.updateVideoElements();
     this.updateAudioElements();
+    this.updateTextElements(this.currentTimeInMs);
+    this.updateShapeElements(this.currentTimeInMs);
     if (playing) {
       this.startedTime = Date.now();
       this.startedTimePlay = this.currentTimeInMs
@@ -653,6 +657,22 @@ export class Store {
         },
       },
     );
+  }
+
+  updateTextElements(newTime: number) {
+    this.editorElements.filter(e => e.type === 'text').forEach(e => {
+      if (!e.fabricObject) return;
+      const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
+      e.fabricObject.visible = isInside;
+    });
+  }
+  
+  updateShapeElements(newTime: number) {
+    this.editorElements.filter(e => e.type === 'shape').forEach(e => {
+      if (!e.fabricObject) return;
+      const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
+      e.fabricObject.visible = isInside;
+    });
   }
 
   updateVideoElements() {
