@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { SeekPlayer } from "./timeline-related/SeekPlayer";
 import { StoreContext } from "@/store";
 import { observer } from "mobx-react";
@@ -8,6 +8,10 @@ import { TimeFrameView } from "./timeline-related/TimeFrameView";
 export const TimeLine = observer(() => {
   const store = React.useContext(StoreContext);
   const percentOfCurrentTime = (store.currentTimeInMs / store.maxTime) * 100;
+
+  useEffect(() => {
+    store.updateElementsVisibility(store.currentTimeInMs);
+  }, [store, store.currentTimeInMs]);
   return (
     <div className="flex flex-col">
       <SeekPlayer />

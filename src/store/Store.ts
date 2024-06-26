@@ -502,6 +502,8 @@ export class Store {
       this.canvas.backgroundColor = this.backgroundColor;
     }
     this.updateElementsVisibility(newTime);
+    this.updateVideoElements();
+    this.updateAudioElements();
     this.canvas?.renderAll();
   }
   
