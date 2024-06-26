@@ -11,6 +11,7 @@ import {
   MdAudiotrack,
   MdOutlineFormatColorFill,
   MdMovieFilter,
+  MdShapeLine,
 } from "react-icons/md";
 import { Store } from "@/store/Store";
 
@@ -83,6 +84,13 @@ const MENU_OPTIONS = [
     icon: MdTransform,
     action: (store: Store) => {
       store.setSelectedMenuOption("Animation");
+    },
+  },
+  {
+    name: "Shape",
+    icon: MdShapeLine, // Import this icon from react-icons
+    action: (store: Store) => {
+      store.setSelectedMenuOption("Shape");
     },
   },
   {
