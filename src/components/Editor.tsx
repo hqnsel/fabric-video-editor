@@ -28,6 +28,7 @@ export const Editor = observer(() => {
     const initCanvas = () => {
       const canvasElement = document.getElementById("canvas") as HTMLCanvasElement;
       if (!canvasElement) {
+        console.error("Canvas element not found");
         return;
       }
       const canvas = new fabric.Canvas(canvasElement, {
@@ -75,6 +76,14 @@ export const Editor = observer(() => {
     };
   
     initCanvas();
+  
+    // Clean up function
+    return () => {
+      if (store.canvas) {
+        store.canvas.dispose();
+        store.setCanvas(null);
+      }
+    };
   }, [store]);
   return (
     <div className="grid grid-rows-[500px_1fr_20px] grid-cols-[72px_300px_1fr_250px] h-[100svh]">

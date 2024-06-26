@@ -42,7 +42,9 @@ export class Store {
           lockRotation: false,
           lockScalingX: false,
           lockScalingY: false,
+          editable: true
         });
+        obj.setCoords();
       });
       this.canvas.renderAll();
     }
@@ -799,16 +801,121 @@ export class Store {
     })
   }
 
-refreshElements() {
-  const store = this;
-  if (!store.canvas || !store.canvas.getContext() || typeof store.canvas.renderAll !== 'function') { 
-    console.error("Canvas is not initialized or context is not available");
-    return;
+  refreshElements() {
+    const store = this;
+    if (!store.canvas || !store.canvas.getContext() || typeof store.canvas.renderAll !== 'function') { 
+      console.error("Canvas is not initialized or context is not available");
+      return;
+    }
+    const canvas = store.canvas;
+  
+    // Instead of clearing, remove objects that are no longer in editorElements
+    const objectsToRemove = canvas.getObjects().filter(obj => 
+      !store.editorElements.some(el => el.fabricObject === obj)
+    );
+    objectsToRemove.forEach(obj => canvas.remove(obj));
+  
+    for (let index = 0; index < store.editorElements.length; index++) {
+      const element = store.editorElements[index];
+      let fabricObject = element.fabricObject;
+  
+      if (!fabricObject || !canvas.contains(fabricObject)) {
+        fabricObject = this.createFabricObject(element);
+        if (fabricObject) {
+          canvas.add(fabricObject);
+          element.fabricObject = fabricObject;
+        }
+      }
+  
+      if (fabricObject) {
+        try {
+          fabricObject.set({
+            selectable: true,
+            hasControls: true,
+            hasBorders: true,
+            lockMovementX: false,
+            lockMovementY: false,
+            lockRotation: false,
+            lockScalingX: false,
+            lockScalingY: false,
+            editable: true
+          });
+          fabricObject.setCoords();
+  
+          // Update object's position and size
+          fabricObject.set({
+            left: element.placement.x,
+            top: element.placement.y,
+            scaleX: element.placement.scaleX,
+            scaleY: element.placement.scaleY,
+            angle: element.placement.rotation
+          });
+  
+          // Ensure event listeners are attached
+          fabricObject.off('modified').on("modified", (e) => {
+            if (!e.target) return;
+            const target = e.target;
+            const placement = element.placement;
+            const newPlacement: Placement = {
+              x: target.left ?? placement.x,
+              y: target.top ?? placement.y,
+              rotation: target.angle ?? placement.rotation,
+              width: target.getScaledWidth(),
+              height: target.getScaledHeight(),
+              scaleX: target.scaleX ?? placement.scaleX,
+              scaleY: target.scaleY ?? placement.scaleY,
+            };
+            const newElement = {
+              ...element,
+              placement: newPlacement,
+            };
+            store.updateEditorElement(newElement);
+          });
+  
+          fabricObject.off('selected').on("selected", () => {
+            store.setSelectedElement(element);
+          });
+        } catch (error) {
+          console.error("Error setting up fabric object:", error);
+        }
+      }
+    }
+  
+    this.refreshAnimations();
+    this.updateTimeTo(this.currentTimeInMs);
+    canvas.renderAll();
+    canvas.requestRenderAll();
   }
-  const canvas = store.canvas;
+  
+  private createFabricObject(element: EditorElement): fabric.Object | null {
+    let fabricObject: fabric.Object | null = null;
+    
+    switch (element.type) {
+      case "video":
+        fabricObject = this.createVideoObject(element);
+        break;
+      case "image":
+        fabricObject = this.createImageObject(element);
+        break;
+      case "text":
+        fabricObject = this.createTextObject(element);
+        break;
+      case "shape":
+        fabricObject = this.createShapeObject(element);
+        break;
+      default:
+        return null;
+    }
+  
+    if (fabricObject) {
+      this.setCommonObjectProperties(fabricObject, element);
+    }
+  
+    return fabricObject;
+  }
 
-  const setEditableProperties = (obj: fabric.Object) => {
-    obj.set({
+  private setCommonObjectProperties(fabricObject: fabric.Object, element: EditorElement) {
+    fabricObject.set({
       selectable: true,
       hasControls: true,
       hasBorders: true,
@@ -817,187 +924,101 @@ refreshElements() {
       lockRotation: false,
       lockScalingX: false,
       lockScalingY: false,
-      editable: true
+      editable: true,
+      name: element.id,
+      left: element.placement.x,
+      top: element.placement.y,
+      scaleX: element.placement.scaleX,
+      scaleY: element.placement.scaleY,
+      angle: element.placement.rotation,
     });
-    obj.setCoords();
-  };
-
-  const objectsToRemove = canvas.getObjects().filter(obj => 
-    !store.editorElements.some(el => el.id === obj.name)
-  );
-  objectsToRemove.forEach(obj => canvas.remove(obj));
-
-  for (let index = 0; index < store.editorElements.length; index++) {
-    const element = store.editorElements[index];
-    let fabricObject = canvas.getObjects().find(obj => obj.name === element.id) as fabric.Object | undefined;
-
-    if (!fabricObject) {
-      switch (element.type) {
-        case "video": {
-          if (document.getElementById(element.properties.elementId) == null) {
-            break;
-          }
-          const videoElement = document.getElementById(element.properties.elementId);
-          if (!isHtmlVideoElement(videoElement)) break;
-          fabricObject = new fabric.CoverVideo(videoElement, {
-            name: element.id,
-            left: element.placement.x,
-            top: element.placement.y,
-            width: element.placement.width,
-            height: element.placement.height,
-            scaleX: element.placement.scaleX,
-            scaleY: element.placement.scaleY,
-            angle: element.placement.rotation,
-            objectCaching: false,
-            selectable: true,
-            lockUniScaling: true,
-            customFilter: element.properties.effect.type,
-          });
-          break;
-        }
-        case "image": {
-          if (document.getElementById(element.properties.elementId) == null) {
-            break;
-          }
-          const imageElement = document.getElementById(element.properties.elementId);
-          if (!isHtmlImageElement(imageElement)) break;
-          fabricObject = new fabric.CoverImage(imageElement, {
-            name: element.id,
-            left: element.placement.x,
-            top: element.placement.y,
-            angle: element.placement.rotation,
-            objectCaching: false,
-            selectable: true,
-            lockUniScaling: true,
-            customFilter: element.properties.effect.type,
-          });
-          const image = {
-            w: imageElement.naturalWidth,
-            h: imageElement.naturalHeight,
-          };
-          fabricObject.width = image.w;
-          fabricObject.height = image.h;
-          imageElement.width = image.w;
-          imageElement.height = image.h;
-          fabricObject.scaleToHeight(image.w);
-          fabricObject.scaleToWidth(image.h);
-          const toScale = {
-            x: element.placement.width / image.w,
-            y: element.placement.height / image.h,
-          };
-          fabricObject.scaleX = toScale.x * element.placement.scaleX;
-          fabricObject.scaleY = toScale.y * element.placement.scaleY;
-          break;
-        }
-        case "audio": {
-          break;
-        }
-        case "text": {
-          fabricObject = new fabric.Textbox(element.properties.text, {
-            name: element.id,
-            left: element.placement.x,
-            top: element.placement.y,
-            scaleX: element.placement.scaleX,
-            scaleY: element.placement.scaleY,
-            width: element.placement.width,
-            height: element.placement.height,
-            angle: element.placement.rotation,
-            fontSize: element.properties.fontSize,
-            fontWeight: element.properties.fontWeight,
-            fill: "#ffffff",
-          });
-          break;
-        }
-        case "shape": {
-          const shapeProps = {
-            name: element.id,
-            left: element.placement.x,
-            top: element.placement.y,
-            width: element.placement.width,
-            height: element.placement.height,
-            scaleX: element.placement.scaleX,
-            scaleY: element.placement.scaleY,
-            angle: element.placement.rotation,
-            fill: element.properties.fill,
-          };
-          switch (element.properties.shapeType) {
-            case 'rectangle':
-            case 'rect':
-              fabricObject = new fabric.Rect(shapeProps);
-              break;
-            case 'circle':
-              fabricObject = new fabric.Circle({
-                ...shapeProps,
-                radius: element.placement.width / 2,
-              });
-              break;
-            case 'triangle':
-              fabricObject = new fabric.Triangle(shapeProps);
-              break;
-            default:
-              console.error("Unsupported shape type:", element.properties.shapeType);
-              break;
-          }
-          break;
-        }
-        default:
-          console.error("Unhandled element type:", element.type);
-          break;
-      }
-
-      if (fabricObject) {
-        setEditableProperties(fabricObject);
-        canvas.add(fabricObject);
-      }
-    } else {
-      fabricObject.set({
-        left: element.placement.x,
-        top: element.placement.y,
-        width: element.placement.width,
-        height: element.placement.height,
-        scaleX: element.placement.scaleX,
-        scaleY: element.placement.scaleY,
-        angle: element.placement.rotation,
-      });
-      setEditableProperties(fabricObject);
-    }
-
-    if (fabricObject) {
-      element.fabricObject = fabricObject;
-      fabricObject.on("modified", function (e) {
-        if (!e.target) return;
-        const target = e.target;
-        const placement = element.placement;
-        const newPlacement: Placement = {
-          x: target.left ?? placement.x,
-          y: target.top ?? placement.y,
-          rotation: target.angle ?? placement.rotation,
-          width: target.getScaledWidth(),
-          height: target.getScaledHeight(),
-          scaleX: target.scaleX ?? placement.scaleX,
-          scaleY: target.scaleY ?? placement.scaleY,
-        };
-        const newElement = {
-          ...element,
-          placement: newPlacement,
-        };
-        store.updateEditorElement(newElement);
-      });
-
-      fabricObject.on("selected", function () {
-        store.setSelectedElement(element);
-      });
-    }
   }
-
-  this.refreshAnimations();
-  this.updateTimeTo(this.currentTimeInMs);
-  canvas.renderAll();
-  canvas.forEachObject(obj => {
-    obj.setCoords();
-  });
-  canvas.requestRenderAll();
+  
+  // Implement these methods in your Store class
+  private createVideoObject(element: VideoEditorElement): fabric.Object | null {
+    const videoElement = document.getElementById(element.properties.elementId);
+    if (!isHtmlVideoElement(videoElement)) return null;
+    return new fabric.CoverVideo(videoElement, {
+      name: element.id,
+      left: element.placement.x,
+      top: element.placement.y,
+      width: element.placement.width,
+      height: element.placement.height,
+      scaleX: element.placement.scaleX,
+      scaleY: element.placement.scaleY,
+      angle: element.placement.rotation,
+      objectCaching: false,
+      selectable: true,
+      lockUniScaling: true,
+      customFilter: element.properties.effect.type,
+    });
   }
+  
+  private createImageObject(element: ImageEditorElement): fabric.Object | null {
+    const imageElement = document.getElementById(element.properties.elementId);
+    if (!isHtmlImageElement(imageElement)) return null;
+    const fabricObject = new fabric.CoverImage(imageElement, {
+      name: element.id,
+      left: element.placement.x,
+      top: element.placement.y,
+      angle: element.placement.rotation,
+      objectCaching: false,
+      selectable: true,
+      lockUniScaling: true,
+      customFilter: element.properties.effect.type,
+    });
+    const image = {
+      w: imageElement.naturalWidth,
+      h: imageElement.naturalHeight,
+    };
+    fabricObject.scaleToWidth(element.placement.width);
+    fabricObject.scaleToHeight(element.placement.height);
+    return fabricObject;
+  }
+  
+  private createTextObject(element: TextEditorElement): fabric.Object {
+    return new fabric.Textbox(element.properties.text, {
+      name: element.id,
+      left: element.placement.x,
+      top: element.placement.y,
+      width: element.placement.width,
+      scaleX: element.placement.scaleX,
+      scaleY: element.placement.scaleY,
+      angle: element.placement.rotation,
+      fontSize: element.properties.fontSize,
+      fontWeight: element.properties.fontWeight,
+      fill: "#ffffff",
+    });
+  }
+  
+  private createShapeObject(element: ShapeEditorElement): fabric.Object | null {
+    const shapeProps = {
+      name: element.id,
+      left: element.placement.x,
+      top: element.placement.y,
+      width: element.placement.width,
+      height: element.placement.height,
+      scaleX: element.placement.scaleX,
+      scaleY: element.placement.scaleY,
+      angle: element.placement.rotation,
+      fill: element.properties.fill,
+    };
+    switch (element.properties.shapeType) {
+      case 'rectangle':
+      case 'rect':
+        return new fabric.Rect(shapeProps);
+      case 'circle':
+        return new fabric.Circle({
+          ...shapeProps,
+          radius: element.placement.width / 2,
+        });
+      case 'triangle':
+        return new fabric.Triangle(shapeProps);
+      default:
+        console.error("Unsupported shape type:", element.properties.shapeType);
+        return null;
+    }
+  } 
 }
 
 
