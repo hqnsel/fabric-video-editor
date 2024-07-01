@@ -19,7 +19,8 @@ const ANIMATION_TYPE_TO_LABEL: Record<string, string> = {
   fadeOut: "Fade Out",
   slideIn: "Slide In",
   slideOut: "Slide Out",
-  breath: "Breath",
+  breathe: "Breathe",
+  shape: "Shape Animation",
 };
 export type AnimationResourceProps = {
   animation: Animation;
@@ -39,6 +40,9 @@ export const AnimationResource = observer((props: AnimationResourceProps) => {
           <MdDelete size="25" />
         </button>
       </div>
+      {props.animation.type === "shape" ? (
+        <ShapeAnimation animation={props.animation} />
+      ) : null}
       {props.animation.type === "fadeIn" ||
       props.animation.type === "fadeOut" ? (
         <FadeAnimation
@@ -169,6 +173,57 @@ export const SlideAnimation = observer(
           >
             <option value="none">None</option>
             <option value="character">Character</option>
+          </select>
+        </div>
+      </div>
+    );
+  }
+);
+
+export const ShapeAnimation = observer(
+  (props: { animation: Animation }) => {
+    const store = React.useContext(StoreContext);
+    return (
+      <div className="flex flex-col w-full items-start">
+        <div className="flex flex-row items-center justify-between my-1">
+          <div className="text-white text-xs">Duration(s)</div>
+          <input
+            className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
+            type="number"
+            value={props.animation.duration / 1000}
+            onChange={(e) => {
+              const duration = Number(e.target.value) * 1000;
+              const isValidDuration = duration > 0;
+              let newDuration = isValidDuration ? duration : 0;
+              if (newDuration < 10) {
+                newDuration = 10;
+              }
+              store.updateAnimation(props.animation.id, {
+                ...props.animation,
+                duration: newDuration,
+              });
+            }}
+          />
+        </div>
+        <div className="flex flex-row items-center justify-between my-1">
+          <div className="text-white text-xs">Animation Type</div>
+          <select
+            className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-24 text-xs"
+            value={props.animation.properties.animationType}
+            onChange={(e) => {
+              store.updateAnimation(props.animation.id, {
+                ...props.animation,
+                properties: {
+                  ...props.animation.properties,
+                  animationType: e.target.value,
+                },
+              });
+            }}
+          >
+            <option value="rotate">Rotate</option>
+            <option value="scale">Scale</option>
+            <option value="bounce">Bounce</option>
+            <option value="float">Float</option>
           </select>
         </div>
       </div>
