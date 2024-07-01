@@ -175,7 +175,11 @@ export class Store {
         lockScalingX: false,
         lockScalingY: false,
       });
-  
+      
+      if (shapeObject.properties.animation && shapeObject.properties.animation !== 'none') {
+        this.applyAnimation(fabricObject, shapeObject.properties.animation);
+      }
+
       element.fabricObject = fabricObject;
       if (this.canvas) {
         console.log('Created fabricObject:', fabricObject);
@@ -229,8 +233,8 @@ export class Store {
     console.log('Refreshing animations');
     anime.remove(this.animationTimeLine);
     this.animationTimeLine = anime.timeline({
-      duration: this.maxTime,
       autoplay: false,
+      duration: this.maxTime,
       update: () => {
         if (this.canvas) {
           this.canvas.renderAll();
@@ -248,34 +252,49 @@ export class Store {
       const animationConfig = {
         targets: fabricObject,
         duration: animation.duration,
-        easing: 'linear',
+        easing: 'easeInOutQuad',
       };
+
       switch (animation.type) {
-        case "bounce":
-          this.animationTimeLine.add({
-            ...animationConfig,
-            translateY: [0, 20],
-            direction: 'alternate',
-            loop: true,
+        case "shape":
+          const shapeAnimation = {
+            targets: fabricObject,
+            duration: animation.duration,
             easing: 'easeInOutQuad',
-          }, editorElement.timeFrame.start);
-          break;
-        case "float":
-          this.animationTimeLine.add({
-            ...animationConfig,
-            translateY: [0, 10],
-            direction: 'alternate',
-            loop: true,
-            easing: 'easeInOutSine',
-          }, editorElement.timeFrame.start);
-          break;
-        case "rotate":
-          this.animationTimeLine.add({
-            ...animationConfig,
-            rotate: ['0deg', '360deg'],
-            loop: true,
-          }, editorElement.timeFrame.start);
-          break;
+          };
+          switch (animation.properties.animationType) {
+            case "rotate":
+              this.animationTimeLine.add({
+                ...shapeAnimation,
+                rotate: '360',
+                loop: true,
+              }, editorElement.timeFrame.start);
+              break;
+            case "scale":
+              this.animationTimeLine.add({
+                ...shapeAnimation,
+                scale: [1, 1.5],
+                direction: 'alternate',
+              }, editorElement.timeFrame.start);
+              break;
+              case "bounce":
+                this.animationTimeLine.add({
+                  ...shapeAnimation,       
+                  translateY: [0, 20],
+                  direction: 'alternate',
+                  loop: true,
+                }, editorElement.timeFrame.start);
+                break;
+              case "float":
+                this.animationTimeLine.add({
+                  ...shapeAnimation,
+                  translateY: [0, 10],
+                  direction: 'alternate',
+                  loop: true,
+                  easing: 'easeInOutSine',
+                }, editorElement.timeFrame.start);
+                break;
+          }
         case "fadeIn": {
           this.animationTimeLine.add({
             opacity: [0, 1],
@@ -430,7 +449,7 @@ export class Store {
     this.animationTimeLine.pause();
     this.animationTimeLine.seek(this.currentTimeInMs);
     if (this.playing) {
-      this.animationTimeLine.play();
+      this.startAnimation();
     }
     console.log('Animations refreshed:', this.animationTimeLine);
   }
@@ -516,11 +535,9 @@ export class Store {
   setPlaying(playing: boolean) {
     this.playing = playing;
     if (playing) {
-      this.startedTime = Date.now();
-      this.startedTimePlay = this.currentTimeInMs;
-      this.animationTimeLine.play();
+      this.startAnimation();
     } else {
-      this.animationTimeLine.pause();
+      this.stopAnimation();
     }
   }
 
@@ -531,13 +548,17 @@ private startAnimation() {
     const elapsed = time - this.startedTime;
     const currentTime = this.startedTimePlay + elapsed;
     this.updateTimeTo(currentTime);
+    this.animationTimeLine.seek(currentTime);
     this.canvas?.renderAll();
-    if (this.playing) {
+    if (this.playing && currentTime <= this.maxTime) {
       this.animationFrameId = requestAnimationFrame(animate);
+    } else {
+      this.setPlaying(false);
     }
   };
   this.startedTime = performance.now();
   this.startedTimePlay = this.currentTimeInMs;
+  this.animationTimeLine.play();
   this.animationFrameId = requestAnimationFrame(animate);
 }
 
@@ -1133,17 +1154,19 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-  private applyAnimation(object: fabric.Object, animationType: string) {
-    const animation: Animation = {
-      targetId: object.name as string,
-      type: animationType,
-      duration: 2000, // Default duration, you can adjust this
-      properties: {
-        direction: 'left', // Default direction, you can modify this as needed
-      },
-    };
-    this.addAnimation(animation);
-  }
+private applyAnimation(object: fabric.Object, animationType: string) {
+  const animation: Animation = {
+    id: getUid(), // Make sure to import getUid from your utils
+    targetId: object.name as string,
+    type: animationType,
+    duration: 2000,
+    properties: {
+      direction: 'left',
+    },
+  };
+  this.addAnimation(animation);
+  this.refreshAnimations();
+}
 }
 
 export function isEditorAudioElement(
