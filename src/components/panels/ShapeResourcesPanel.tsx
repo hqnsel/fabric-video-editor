@@ -23,13 +23,14 @@ export const ShapeResourcesPanel = observer(() => {
     }
   
     let shapeObject = {
-      type: selectedShape,
+      type: 'shape',
       properties: {
         shapeType: selectedShape,
         fill: fillColor,
         stroke: outlineColor,
         strokeWidth: lineWidth,
         animation: selectedAnimation,
+        animationType: selectedAnimation,
         transitionDuration,
         transitionColor,
       },
@@ -42,6 +43,10 @@ export const ShapeResourcesPanel = observer(() => {
         scaleX: 1,
         scaleY: 1,
       },
+      timeFrame: {
+        start: 0,
+        end: store.maxTime,
+      },
     };
     
     if (selectedShape === 'square') {
@@ -51,6 +56,7 @@ export const ShapeResourcesPanel = observer(() => {
       shapeObject.placement.width = 70;
       shapeObject.placement.height = 60;
     }
+    
     console.log('Adding shape with animation:', selectedAnimation);
     store.addShapeResource(shapeObject);
     console.log('Shape added:', shapeObject);

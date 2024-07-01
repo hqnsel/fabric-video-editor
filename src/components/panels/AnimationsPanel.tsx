@@ -29,12 +29,34 @@ export const AnimationsPanel = observer(() => {
     return animation.type === "breathe";
   });
 
+  const hasShapeAnimation = selectedElementAnimations.some((animation) => {
+    return animation.type === "shape";
+  });
+
   return (
     <>
       <div className="text-sm px-[16px] pt-[16px] pb-[8px] font-semibold">
         Animations
       </div>
-      {selectedElement && !hasFadeInAnimation ? (
+      {selectedElement && !hasShapeAnimation && selectedElement.type === 'shape' && (
+        <div
+          className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
+          onClick={() => {
+            store.addAnimation({
+              id: getUid(),
+              type: "shape",
+              targetId: selectedElement?.id ?? "",
+              duration: 1000,
+              properties: {
+                animationType: selectedElement.properties.animation,
+              },
+            });
+          }}
+        >
+          Add Shape Animation
+        </div>
+      )}
+      {selectedElement && !hasFadeInAnimation && (
         <div
           className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
           onClick={() => {
@@ -49,8 +71,8 @@ export const AnimationsPanel = observer(() => {
         >
           Add Fade In
         </div>
-      ) : null}
-      {selectedElement && !hasFadeOutAnimation ? (
+      )}
+      {selectedElement && !hasFadeOutAnimation && (
         <div
           className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
           onClick={() => {
@@ -65,8 +87,8 @@ export const AnimationsPanel = observer(() => {
         >
           Add Fade Out
         </div>
-      ) : null}
-      {selectedElement && !hasSlideInAnimation ? (
+      )}
+      {selectedElement && !hasSlideInAnimation && (
         <div
           className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
           onClick={() => {
@@ -85,8 +107,8 @@ export const AnimationsPanel = observer(() => {
         >
           Add Slide In
         </div>
-      ) : null}
-      {selectedElement && !hasSlideOutAnimation ? (
+      )}
+      {selectedElement && !hasSlideOutAnimation && (
         <div
           className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
           onClick={() => {
@@ -105,8 +127,8 @@ export const AnimationsPanel = observer(() => {
         >
           Add Slide Out
         </div>
-      ) : null}
-      {selectedElement && !hasConsantAnimation ? (
+      )}
+      {selectedElement && !hasConsantAnimation && (
         <div
           className="text-sm px-[16px] py-[8px] font-semibold hover:bg-slate-700 hover:text-white cursor-pointer"
           onClick={() => {
@@ -121,10 +143,10 @@ export const AnimationsPanel = observer(() => {
         >
           Add Breathing
         </div>
-      ) : null}
-      {selectedElementAnimations.map((animation) => {
-        return <AnimationResource key={animation.id} animation={animation} />;
-      })}
+      )}
+      {selectedElementAnimations.map((animation) => (
+        <AnimationResource key={animation.id} animation={animation} />
+      ))}
     </>
   );
 });
