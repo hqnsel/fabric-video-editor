@@ -1154,19 +1154,20 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-private applyAnimation(object: fabric.Object, animationType: string) {
-  const animation: Animation = {
-    id: getUid(), // Make sure to import getUid from your utils
-    targetId: object.name as string,
-    type: animationType,
-    duration: 2000,
-    properties: {
-      direction: 'left',
-    },
-  };
-  this.addAnimation(animation);
-  this.refreshAnimations();
-}
+  private applyAnimation(object: fabric.Object, animationType: string) {
+    const animation: Animation = {
+      id: getUid(),
+      targetId: object.name as string,
+      type: object instanceof fabric.Rect || object instanceof fabric.Circle || object instanceof fabric.Triangle ? 'shape' : animationType,
+      duration: 2000,
+      properties: {
+        animationType: object instanceof fabric.Rect || object instanceof fabric.Circle || object instanceof fabric.Triangle ? animationType : undefined,
+        direction: 'left',
+      },
+    };
+    this.addAnimation(animation);
+    this.refreshAnimations();
+  }
 }
 
 export function isEditorAudioElement(
