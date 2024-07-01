@@ -266,7 +266,7 @@ export class Store {
             case "rotate":
               this.animationTimeLine.add({
                 ...shapeAnimation,
-                rotate: '360',
+                rotate: 360,
                 loop: true,
               }, editorElement.timeFrame.start);
               break;
@@ -275,26 +275,28 @@ export class Store {
                 ...shapeAnimation,
                 scale: [1, 1.5],
                 direction: 'alternate',
+                loop: true,
               }, editorElement.timeFrame.start);
               break;
-              case "bounce":
-                this.animationTimeLine.add({
-                  ...shapeAnimation,       
-                  translateY: [0, 20],
-                  direction: 'alternate',
-                  loop: true,
-                }, editorElement.timeFrame.start);
-                break;
-              case "float":
-                this.animationTimeLine.add({
-                  ...shapeAnimation,
-                  translateY: [0, 10],
-                  direction: 'alternate',
-                  loop: true,
-                  easing: 'easeInOutSine',
-                }, editorElement.timeFrame.start);
-                break;
+            case "bounce":
+              this.animationTimeLine.add({
+                ...shapeAnimation,       
+                translateY: [0, -20],
+                direction: 'alternate',
+                loop: true,
+              }, editorElement.timeFrame.start);
+              break;
+            case "float":
+              this.animationTimeLine.add({
+                ...shapeAnimation,
+                translateY: [0, -10],
+                direction: 'alternate',
+                loop: true,
+                easing: 'easeInOutSine',
+              }, editorElement.timeFrame.start);
+              break;
           }
+          break;
         case "fadeIn": {
           this.animationTimeLine.add({
             opacity: [0, 1],
