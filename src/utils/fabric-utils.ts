@@ -249,12 +249,12 @@ export class FabricUitls {
       
         const animationProps = getShapeAnimationProperties(animationType);
         
-        anime({
+        return anime({
             targets: fabricObject,
             ...animationProps,
             duration: duration,
             easing: 'easeInOutQuad',
-            loop: true,
+            autoplay: false,
             update: () => {
                 fabricObject.set(animationProps);
                 fabricObject.setCoords();

@@ -154,7 +154,17 @@ export class Store {
   
       console.log('Adding animation:', element.properties.animation);
       if (element.properties.animation && element.properties.animation !== 'none') {
-        this.applyAnimation(fabricObject, element.properties.animation);
+        const animation = FabricUitls.applyShapeAnimation(fabricObject, element.properties.animation, element.properties.transitionDuration);
+        this.addAnimation({
+          id: getUid(),
+          type: 'shape',
+          targetId: id,
+          duration: element.properties.transitionDuration,
+          properties: {
+            animationType: element.properties.animation,
+          },
+          animeInstance: animation,
+        });
       }
   
       this.refreshAnimations();
@@ -190,44 +200,22 @@ export class Store {
   }
 
   refreshAnimations() {
-    console.log('Refreshing animations');
-   // anime.remove(this.animationTimeLine);
     this.animationTimeLine = anime.timeline({
       autoplay: false,
-      duration: this.maxTime,
-      update: () => {
-        if (this.canvas) {
-          this.canvas.renderAll();
-        }
-      }
     });
   
-    for (const animation of this.animations) {
-      const editorElement = this.editorElements.find((element) => element.id === animation.targetId);
-      const fabricObject = editorElement?.fabricObject;
-      if (!editorElement || !fabricObject) {
-        continue;
-      }
+    this.animations.forEach((animation) => {
+      const element = this.editorElements.find((e) => e.id === animation.targetId);
+      if (!element) return;
+  
+      const fabricObject = element.fabricObject;
+      if (!fabricObject) return;
   
       switch (animation.type) {
         case "shape":
-          const startTime = animation.properties.startTime || 0;
-          const endTime = animation.properties.endTime || animation.duration;
-          const animationDuration = endTime - startTime;
-          
-          const shapeAnimationProps = getShapeAnimationProperties(animation.properties.animationType);
-          this.animationTimeLine.add({
-            targets: fabricObject,
-            duration: animationDuration,
-            ...shapeAnimationProps,
-            easing: 'linear',
-            autoplay: false,
-            update: () => {
-              if (this.canvas) {
-                this.canvas.renderAll();
-              }
-            }
-          }, startTime);
+          if (animation.animeInstance) {
+            this.animationTimeLine.add(animation.animeInstance, 0);
+          }
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -235,7 +223,7 @@ export class Store {
             duration: animation.duration,
             targets: fabricObject,
             easing: 'linear',
-          }, editorElement.timeFrame.start);
+          }, element.timeFrame.start);
           break;
         }
         case "fadeOut": {
@@ -244,37 +232,37 @@ export class Store {
             duration: animation.duration,
             targets: fabricObject,
             easing: 'linear',
-          }, editorElement.timeFrame.end - animation.duration);
-          break
+          }, element.timeFrame.end - animation.duration);
+          break;
         }
         case "slideIn": {
           const direction = animation.properties.direction;
           const targetPosition = {
-            left: editorElement.placement.x,
-            top: editorElement.placement.y,
+            left: element.placement.x,
+            top: element.placement.y,
           }
           const startPosition = {
-            left: (direction === "left" ? - editorElement.placement.width : direction === "right" ? this.canvas?.width : editorElement.placement.x),
-            top: (direction === "top" ? - editorElement.placement.height : direction === "bottom" ? this.canvas?.height : editorElement.placement.y),
+            left: (direction === "left" ? - element.placement.width : direction === "right" ? this.canvas?.width : element.placement.x),
+            top: (direction === "top" ? - element.placement.height : direction === "bottom" ? this.canvas?.height : element.placement.y),
           }
           if (animation.properties.useClipPath) {
-            const clipRectangle = FabricUitls.getClipMaskRect(editorElement, 50);
+            const clipRectangle = FabricUitls.getClipMaskRect(element, 50);
             fabricObject.set('clipPath', clipRectangle)
           }
-          if (editorElement.type === "text" && animation.properties.textType === "character") {
-            this.canvas?.remove(...editorElement.properties.splittedTexts)
+          if (element.type === "text" && animation.properties.textType === "character") {
+            this.canvas?.remove(...element.properties.splittedTexts)
             // @ts-ignore
-            editorElement.properties.splittedTexts = getTextObjectsPartitionedByCharacters(editorElement.fabricObject, editorElement);
-            editorElement.properties.splittedTexts.forEach((textObject) => {
+            element.properties.splittedTexts = getTextObjectsPartitionedByCharacters(element.fabricObject, element);
+            element.properties.splittedTexts.forEach((textObject) => {
               this.canvas!.add(textObject);
             })
             const duration = animation.duration / 2;
-            const delay = duration / editorElement.properties.splittedTexts.length;
-            for (let i = 0; i < editorElement.properties.splittedTexts.length; i++) {
-              const splittedText = editorElement.properties.splittedTexts[i];
+            const delay = duration / element.properties.splittedTexts.length;
+            for (let i = 0; i < element.properties.splittedTexts.length; i++) {
+              const splittedText = element.properties.splittedTexts[i];
               const offset = {
-                left: splittedText.left! - editorElement.placement.x,
-                top: splittedText.top! - editorElement.placement.y
+                left: splittedText.left! - element.placement.x,
+                top: splittedText.top! - element.placement.y
               }
               this.animationTimeLine.add({
                 left: [startPosition.left! + offset.left, targetPosition.left + offset.left],
@@ -282,33 +270,33 @@ export class Store {
                 delay: i * delay,
                 duration: duration,
                 targets: splittedText,
-              }, editorElement.timeFrame.start);
+              }, element.timeFrame.start);
             }
             this.animationTimeLine.add({
               opacity: [1, 0],
               duration: 1,
               targets: fabricObject,
               easing: 'linear',
-            }, editorElement.timeFrame.start);
+            }, element.timeFrame.start);
             this.animationTimeLine.add({
               opacity: [0, 1],
               duration: 1,
               targets: fabricObject,
               easing: 'linear',
-            }, editorElement.timeFrame.start + animation.duration);
-
+            }, element.timeFrame.start + animation.duration);
+  
             this.animationTimeLine.add({
               opacity: [0, 1],
               duration: 1,
-              targets: editorElement.properties.splittedTexts,
+              targets: element.properties.splittedTexts,
               easing: 'linear',
-            }, editorElement.timeFrame.start);
+            }, element.timeFrame.start);
             this.animationTimeLine.add({
               opacity: [1, 0],
               duration: 1,
-              targets: editorElement.properties.splittedTexts,
+              targets: element.properties.splittedTexts,
               easing: 'linear',
-            }, editorElement.timeFrame.start + animation.duration);
+            }, element.timeFrame.start + animation.duration);
           }
           this.animationTimeLine.add({
             left: [startPosition.left, targetPosition.left],
@@ -316,21 +304,21 @@ export class Store {
             duration: animation.duration,
             targets: fabricObject,
             easing: 'linear',
-          }, editorElement.timeFrame.start);
-          break
+          }, element.timeFrame.start);
+          break;
         }
         case "slideOut": {
           const direction = animation.properties.direction;
           const startPosition = {
-            left: editorElement.placement.x,
-            top: editorElement.placement.y,
+            left: element.placement.x,
+            top: element.placement.y,
           }
           const targetPosition = {
-            left: (direction === "left" ? - editorElement.placement.width : direction === "right" ? this.canvas?.width : editorElement.placement.x),
-            top: (direction === "top" ? -100 - editorElement.placement.height : direction === "bottom" ? this.canvas?.height : editorElement.placement.y),
+            left: (direction === "left" ? - element.placement.width : direction === "right" ? this.canvas?.width : element.placement.x),
+            top: (direction === "top" ? -100 - element.placement.height : direction === "bottom" ? this.canvas?.height : element.placement.y),
           }
           if (animation.properties.useClipPath) {
-            const clipRectangle = FabricUitls.getClipMaskRect(editorElement, 50);
+            const clipRectangle = FabricUitls.getClipMaskRect(element, 50);
             fabricObject.set('clipPath', clipRectangle)
           }
           this.animationTimeLine.add({
@@ -339,48 +327,45 @@ export class Store {
             duration: animation.duration,
             targets: fabricObject,
             easing: 'linear',
-          }, editorElement.timeFrame.end - animation.duration);
-          break
+          }, element.timeFrame.end - animation.duration);
+          break;
         }
         case "breathe": {
           const itsSlideInAnimation = this.animations.find((a) => a.targetId === animation.targetId && (a.type === "slideIn"));
           const itsSlideOutAnimation = this.animations.find((a) => a.targetId === animation.targetId && (a.type === "slideOut"));
-          const timeEndOfSlideIn = itsSlideInAnimation ? editorElement.timeFrame.start + itsSlideInAnimation.duration : editorElement.timeFrame.start;
-          const timeStartOfSlideOut = itsSlideOutAnimation ? editorElement.timeFrame.end - itsSlideOutAnimation.duration : editorElement.timeFrame.end;
-          if (timeEndOfSlideIn > timeStartOfSlideOut) {
-            continue;
+          const timeEndOfSlideIn = itsSlideInAnimation ? element.timeFrame.start + itsSlideInAnimation.duration : element.timeFrame.start;
+          const timeStartOfSlideOut = itsSlideOutAnimation ? element.timeFrame.end - itsSlideOutAnimation.duration : element.timeFrame.end;
+          if (timeEndOfSlideIn <= timeStartOfSlideOut) {
+            const duration = timeStartOfSlideOut - timeEndOfSlideIn;
+            const easeFactor = 4;
+            const suitableTimeForHeartbeat = 1000 * 60 / 72 * easeFactor
+            const upScale = 1.05;
+            const currentScaleX = fabricObject.scaleX ?? 1;
+            const currentScaleY = fabricObject.scaleY ?? 1;
+            const finalScaleX = currentScaleX * upScale;
+            const finalScaleY = currentScaleY * upScale;
+            const totalHeartbeats = Math.floor(duration / suitableTimeForHeartbeat);
+            if (totalHeartbeats >= 1) {
+              const keyframes = [];
+              for (let i = 0; i < totalHeartbeats; i++) {
+                keyframes.push({ scaleX: finalScaleX, scaleY: finalScaleY });
+                keyframes.push({ scaleX: currentScaleX, scaleY: currentScaleY });
+              }
+              console.log(`Adding ${animation.type} animation for element ${element.id}`);
+              this.animationTimeLine.add({
+                duration: duration,
+                targets: fabricObject,
+                keyframes,
+                easing: 'linear',
+                loop: true
+              }, timeEndOfSlideIn);
+            }
           }
-          const duration = timeStartOfSlideOut - timeEndOfSlideIn;
-          const easeFactor = 4;
-          const suitableTimeForHeartbeat = 1000 * 60 / 72 * easeFactor
-          const upScale = 1.05;
-          const currentScaleX = fabricObject.scaleX ?? 1;
-          const currentScaleY = fabricObject.scaleY ?? 1;
-          const finalScaleX = currentScaleX * upScale;
-          const finalScaleY = currentScaleY * upScale;
-          const totalHeartbeats = Math.floor(duration / suitableTimeForHeartbeat);
-          if (totalHeartbeats < 1) {
-            continue;
-          }
-          const keyframes = [];
-          for (let i = 0; i < totalHeartbeats; i++) {
-            keyframes.push({ scaleX: finalScaleX, scaleY: finalScaleY });
-            keyframes.push({ scaleX: currentScaleX, scaleY: currentScaleY });
-          }
-          console.log(`Adding ${animation.type} animation for element ${editorElement.id}`);
-          this.animationTimeLine.add({
-            duration: duration,
-            targets: fabricObject,
-            keyframes,
-            easing: 'linear',
-            loop: true
-          }, timeEndOfSlideIn);
-
-          break
+          break;
         }
       }
-    }
-
+    });
+  
     this.animationTimeLine.pause();
     this.animationTimeLine.seek(this.currentTimeInMs);
     console.log('Animations refreshed:', this.animationTimeLine);
@@ -465,45 +450,33 @@ export class Store {
 
 
   setPlaying(playing: boolean) {
-    this.playing = playing;
     if (playing) {
-      this.startAnimation();
+      this.play();
     } else {
-      this.stopAnimation();
+      this.pause();
     }
   }
-
-private animationFrameId: number | null = null;
-
-private startAnimation() {
-  this.playing = true;
-  this.animationTimeLine.play();
-}
-
-private stopAnimation() {
-  this.playing = false;
-  this.animationTimeLine.pause();
-}
+  
+  play() {
+    this.playing = true;
+    this.animationTimeLine.play();
+  }
+  
+  pause() {
+    this.playing = false;
+    this.animationTimeLine.pause();
+  }
+  
+  stop() {
+    this.playing = false;
+    this.animationTimeLine.pause();
+    this.animationTimeLine.seek(0);
+    this.setCurrentTimeInMs(0);
+    this.canvas?.renderAll();
+  }
 
   startedTime = 0;
   startedTimePlay = 0;
-
-  playFrames() {
-    if (!this.playing) {
-      return;
-    }
-    const elapsedTime = Date.now() - this.startedTime;
-    const newTime = this.startedTimePlay + elapsedTime;
-    this.updateTimeTo(newTime);
-    if (newTime > this.maxTime) {
-      this.currentKeyFrame = 0;
-      this.setPlaying(false);
-    } else {
-      requestAnimationFrame(() => {
-        this.playFrames();
-      });
-    }
-  }
 
   updateTimeTo(newTime: number) {
     this.setCurrentTimeInMs(newTime);
