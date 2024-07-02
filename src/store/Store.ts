@@ -145,14 +145,12 @@ export class Store {
   
       element.fabricObject = fabricObject;
       if (this.canvas) {
-        console.log('Created fabricObject:', fabricObject);
         this.canvas.add(fabricObject);
         this.canvas.renderAll();
       }
       this.editorElements.push(element);
       this.setSelectedElement(element);
   
-      console.log('Adding animation:', element.properties.animation);
       if (element.properties.animation && element.properties.animation !== 'none') {
         const animation = {
           id: getUid(),
@@ -168,8 +166,6 @@ export class Store {
         this.addAnimation(animation);
       }
   
-      this.refreshAnimations();
-      console.log('Animations after adding shape:', this.animations);
       return element;
     }
   }
@@ -700,10 +696,10 @@ handleSeek(seek: number) {
       if (!e.fabricObject) return;
       const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
       e.fabricObject.visible = isInside;
-      if (isInside) {
+      if (isInside && this.playing) {
         const animation = this.animations.find(a => a.targetId === e.id && a.type === 'shape');
         if (animation) {
-          const progress = (newTime - e.timeFrame.start) / (e.timeFrame.end - e.timeFrame.start);
+          const progress = (newTime - animation.properties.startTime) / (animation.properties.endTime - animation.properties.startTime);
           const shapeAnimationProps = getShapeAnimationProperties(animation.properties.animationType);
           Object.entries(shapeAnimationProps).forEach(([prop, value]) => {
             if (Array.isArray(value)) {
