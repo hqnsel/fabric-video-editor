@@ -60,18 +60,6 @@ export const ShapeResourcesPanel = observer(() => {
     console.log('Adding shape with animation:', selectedAnimation);
     const addedShape = store.addShapeResource(shapeObject);
     
-    if (selectedAnimation !== 'none' && addedShape) {
-      store.addAnimation({
-        id: Date.now().toString(),
-        type: 'shape',
-        targetId: addedShape.id,
-        duration: transitionDuration,
-        properties: {
-          animationType: selectedAnimation,
-        },
-      });
-    }
-    
     console.log('Shape added:', addedShape);
     console.log('Current animations:', store.animations);
   };

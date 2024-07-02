@@ -161,6 +161,8 @@ export class Store {
           duration: element.properties.transitionDuration,
           properties: {
             animationType: element.properties.animation,
+            startTime: 0,
+            endTime: element.properties.transitionDuration,
           },
         };
         this.addAnimation(animation);
@@ -168,6 +170,7 @@ export class Store {
   
       this.refreshAnimations();
       console.log('Animations after adding shape:', this.animations);
+      return element;
     }
   }
 
@@ -185,7 +188,7 @@ export class Store {
     console.log('Adding animation:', animation);
     if (animation.type === 'shape') {
       animation.properties.startTime = animation.properties.startTime || 0;
-      animation.properties.endTime = animation.properties.endTime || animation.duration;
+      animation.properties.endTime = animation.properties.endTime || this.maxTime;
     }
     this.animations.push(animation);
     console.log('Animations after adding:', this.animations);
@@ -213,13 +216,16 @@ export class Store {
       switch (animation.type) {
         case "shape":
           const animationProps = getShapeAnimationProperties(animation.properties.animationType as ShapeAnimationType);
+          const startTime = animation.properties.startTime || 0;
+          const endTime = animation.properties.endTime || this.maxTime;
+          
           this.animationTimeLine.add({
             targets: fabricObject,
             ...animationProps,
-            duration: animation.duration,
+            duration: endTime - startTime,
             easing: 'easeInOutQuad',
-            loop: true,
             autoplay: false,
+            loop: false,
             begin: () => {
               fabricObject.set({
                 left: element.placement.x,
@@ -227,10 +233,20 @@ export class Store {
               });
             },
             update: () => {
+              if (this.playing && this.currentTimeInMs >= startTime && this.currentTimeInMs <= endTime) {
+                fabricObject.setCoords();
+                this.canvas?.renderAll();
+              }
+            },
+            complete: () => {
+              fabricObject.set({
+                left: element.placement.x,
+                top: element.placement.y,
+              });
               fabricObject.setCoords();
               this.canvas?.renderAll();
             }
-          }, element.timeFrame.start);
+          }, startTime);
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -474,6 +490,7 @@ export class Store {
   
   play() {
     this.playing = true;
+    this.startedTimePlay = Date.now() - this.currentTimeInMs;
     this.animationTimeLine.play();
     this.updateElementsVisibility(this.currentTimeInMs);
     this.canvas?.renderAll();
@@ -492,6 +509,7 @@ export class Store {
     this.animationTimeLine.seek(0);
     this.setCurrentTimeInMs(0);
     this.updateElementsVisibility(0);
+    this.refreshAnimations();
     this.canvas?.renderAll();
   }
 
