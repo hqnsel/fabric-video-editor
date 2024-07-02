@@ -215,34 +215,10 @@ export class Store {
           const startTime = animation.properties.startTime || 0;
           const endTime = animation.properties.endTime || this.maxTime;
           
-          this.animationTimeLine.add({
-            targets: fabricObject,
-            ...animationProps,
-            duration: endTime - startTime,
-            easing: 'easeInOutQuad',
-            autoplay: false,
-            loop: false,
-            begin: () => {
-              fabricObject.set({
-                left: element.placement.x,
-                top: element.placement.y,
-              });
-            },
-            update: () => {
-              if (this.playing && this.currentTimeInMs >= startTime && this.currentTimeInMs <= endTime) {
-                fabricObject.setCoords();
-                this.canvas?.renderAll();
-              }
-            },
-            complete: () => {
-              fabricObject.set({
-                left: element.placement.x,
-                top: element.placement.y,
-              });
-              fabricObject.setCoords();
-              this.canvas?.renderAll();
-            }
-          }, startTime);
+          const animeInstance = this.applyAnimation(fabricObject, animation.properties.animationType as ShapeAnimationType);
+          if (animeInstance) {
+            this.animationTimeLine.add(animeInstance, startTime);
+          }
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -696,22 +672,21 @@ handleSeek(seek: number) {
       if (!e.fabricObject) return;
       const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
       e.fabricObject.visible = isInside;
-      if (isInside && this.playing) {
+      if (isInside) {
         const animation = this.animations.find(a => a.targetId === e.id && a.type === 'shape');
         if (animation) {
-          const progress = (newTime - animation.properties.startTime) / (animation.properties.endTime - animation.properties.startTime);
-          const shapeAnimationProps = getShapeAnimationProperties(animation.properties.animationType);
-          Object.entries(shapeAnimationProps).forEach(([prop, value]) => {
-            if (Array.isArray(value)) {
-              const [start, end] = value;
-              (e.fabricObject as any)[prop] = start + (end - start) * progress;
-            }
-          });
+          const animationStart = animation.properties.startTime || e.timeFrame.start;
+          const animationEnd = animation.properties.endTime || e.timeFrame.end;
+          if (newTime >= animationStart && newTime <= animationEnd) {
+            const progress = (newTime - animationStart) / (animationEnd - animationStart);
+            this.animationTimeLine.seek(animationStart + progress * (animationEnd - animationStart));
+          }
         }
       }
     });
     this.canvas?.renderAll();
   }
+  
 
   updateVideoElements() {
     this.editorElements.filter(
@@ -1101,12 +1076,13 @@ handleSeek(seek: number) {
     const animationProps = getShapeAnimationProperties(animationType);
     const duration = 2000; // You can adjust this or make it a parameter
   
-    anime({
+    return anime({
       targets: object,
       ...animationProps,
       duration: duration,
       easing: 'easeInOutQuad',
-      loop: true,
+      autoplay: false,
+      loop: false,
       update: () => {
         if (this.canvas) {
           this.canvas.renderAll();
@@ -1115,24 +1091,6 @@ handleSeek(seek: number) {
     });
   }
 }
-
-export function isEditorAudioElement(
-  element: EditorElement
-): element is AudioEditorElement {
-  return element.type === "audio";
-}
-export function isEditorVideoElement(
-  element: EditorElement
-): element is VideoEditorElement {
-  return element.type === "video";
-}
-
-export function isEditorImageElement(
-  element: EditorElement
-): element is ImageEditorElement {
-  return element.type === "image";
-}
-
 
 function getTextObjectsPartitionedByCharacters(textObject: fabric.Text, element: TextEditorElement): fabric.Text[] {
   let copyCharsObjects: fabric.Text[] = [];
