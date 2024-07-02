@@ -387,6 +387,7 @@ export class Store {
     this.animationTimeLine.pause();
     this.animationTimeLine.seek(this.currentTimeInMs);
     console.log('Animations refreshed:', this.animationTimeLine);
+    this.makeElementsEditable();
   }
 
   removeAnimation(id: string) {
@@ -1097,12 +1098,13 @@ handleSeek(seek: number) {
       }
     }
   
-    const repeatCount = Math.ceil(duration / (1000 / speed));
+    const cycleTime = 1000 / speed;
+    const repeatCount = Math.ceil(duration / cycleTime);
   
     return {
       targets: object,
       ...finalProps,
-      duration: 1000 / speed,
+      duration: cycleTime,
       easing: 'linear',
       loop: true,
       repeat: repeatCount - 1,

@@ -269,11 +269,11 @@ export function getShapeAnimationProperties(type: ShapeAnimationType) {
       case 'rotate':
         return { angle: [0, 360] };
       case 'scale':
-        return { scaleX: [1, 1.5], scaleY: [1, 1.5] };
+        return { scale: [1, 1.5] };
       case 'bounce':
-        return { top: ['-=20', '+=20'] };
+        return { translateY: [0, -20] };
       case 'float':
-        return { left: ['-=10', '+=10'], top: ['-=10', '+=10'] };
+        return { translateY: [0, -10], translateX: [0, 10] };
       default:
         return {};
     }
