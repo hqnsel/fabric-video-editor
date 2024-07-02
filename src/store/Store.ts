@@ -232,7 +232,10 @@ export class Store {
             speed
           );
           if (animeInstance) {
-            this.animationTimeLine.add(animeInstance, startTime);
+            this.animationTimeLine.add({
+              ...animeInstance,
+              duration: duration,
+            }, startTime);
           }
           break;
         case "fadeIn": {
@@ -1098,16 +1101,11 @@ handleSeek(seek: number) {
       }
     }
   
-    const cycleTime = 1000 / speed;
-    const repeatCount = Math.ceil(duration / cycleTime);
-  
     return {
       targets: object,
       ...finalProps,
-      duration: cycleTime,
       easing: 'linear',
       loop: true,
-      repeat: repeatCount - 1,
       update: () => {
         object.setCoords();
         this.canvas?.renderAll();
