@@ -8,6 +8,14 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
 import { ShapeAnimationType } from '../types';
 
+export function isEditorImageElement(element: EditorElement): element is ImageEditorElement {
+  return element.type === "image";
+}
+
+export function isEditorVideoElement(element: EditorElement): element is VideoEditorElement {
+  return element.type === "video";
+}
+
 export class Store {
   canvas: fabric.Canvas | null
 
@@ -1076,19 +1084,19 @@ handleSeek(seek: number) {
     const animationProps = getShapeAnimationProperties(animationType);
     const duration = 2000; // You can adjust this or make it a parameter
   
-    return anime({
+    return {
       targets: object,
       ...animationProps,
       duration: duration,
       easing: 'easeInOutQuad',
       autoplay: false,
-      loop: false,
+      loop: true,
       update: () => {
         if (this.canvas) {
           this.canvas.renderAll();
         }
       }
-    });
+    };
   }
 }
 
