@@ -199,10 +199,12 @@ export class Store {
     this.refreshAnimations();
   }
 
-  updateAnimation(id: string, animation: Animation) {
-    const index = this.animations.findIndex((a) => a.id === id);
-    this.animations[index] = animation;
-    this.refreshAnimations();
+  updateAnimation(id: string, updatedProperties: Partial<Animation>) {
+    const index = this.animations.findIndex(a => a.id === id);
+    if (index !== -1) {
+      this.animations[index] = { ...this.animations[index], ...updatedProperties };
+      this.refreshAnimations();
+    }
   }
 
   refreshAnimations() {
@@ -212,18 +214,23 @@ export class Store {
   
     this.animations.forEach((animation) => {
       const element = this.editorElements.find((e) => e.id === animation.targetId);
-      if (!element) return;
+      if (!element || !element.fabricObject) return;
   
       const fabricObject = element.fabricObject;
-      if (!fabricObject) return;
   
       switch (animation.type) {
         case "shape":
-          const animationProps = getShapeAnimationProperties(animation.properties.animationType as ShapeAnimationType);
           const startTime = animation.properties.startTime || 0;
           const endTime = animation.properties.endTime || this.maxTime;
+          const duration = endTime - startTime;
+          const speed = animation.properties.speed || 1;
           
-          const animeInstance = this.applyAnimation(fabricObject, animation.properties.animationType as ShapeAnimationType);
+          const animeInstance = this.applyAnimation(
+            fabricObject, 
+            animation.properties.animationType as ShapeAnimationType,
+            duration,
+            speed
+          );
           if (animeInstance) {
             this.animationTimeLine.add(animeInstance, startTime);
           }
@@ -1078,27 +1085,35 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType) {
+  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType, duration: number, speed: number) {
     if (!this.canvas || animationType === 'none') return;
   
     const animationProps = getShapeAnimationProperties(animationType);
-    const duration = 2000; // You can adjust this or make it a parameter
+    
+    let finalProps: any = {};
+    for (const [key, value] of Object.entries(animationProps)) {
+      if (Array.isArray(value)) {
+        finalProps[key] = value;
+      }
+    }
+  
+    const repeatCount = Math.ceil(duration / (1000 / speed));
   
     return {
       targets: object,
-      ...animationProps,
-      duration: duration,
-      easing: 'easeInOutQuad',
-      autoplay: false,
+      ...finalProps,
+      duration: 1000 / speed,
+      easing: 'linear',
       loop: true,
+      repeat: repeatCount - 1,
       update: () => {
-        if (this.canvas) {
-          this.canvas.renderAll();
-        }
+        object.setCoords();
+        this.canvas?.renderAll();
       }
     };
   }
 }
+
 
 function getTextObjectsPartitionedByCharacters(textObject: fabric.Text, element: TextEditorElement): fabric.Text[] {
   let copyCharsObjects: fabric.Text[] = [];

@@ -183,6 +183,27 @@ export const SlideAnimation = observer(
 export const ShapeAnimation = observer(
   (props: { animation: Animation }) => {
     const store = React.useContext(StoreContext);
+
+    const handleStartTimeChange = (value: number) => {
+      store.updateAnimation(props.animation.id, { properties: { ...props.animation.properties, startTime: value } });
+    };
+
+    const handleEndTimeChange = (value: number) => {
+      store.updateAnimation(props.animation.id, { properties: { ...props.animation.properties, endTime: value } });
+    };
+
+    const handleDurationChange = (value: number) => {
+      store.updateAnimation(props.animation.id, { duration: value });
+    };
+
+    const handleAnimationTypeChange = (value: ShapeAnimationType) => {
+      store.updateAnimation(props.animation.id, { properties: { ...props.animation.properties, animationType: value } });
+    };
+
+    const handleSpeedChange = (value: number) => {
+      store.updateAnimation(props.animation.id, { properties: { ...props.animation.properties, speed: value } });
+    };
+
     return (
       <div className="flex flex-col w-full items-start">
         <div className="flex flex-row items-center justify-between my-1">
@@ -190,16 +211,10 @@ export const ShapeAnimation = observer(
           <input
             className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
             type="number"
-            value={props.animation.startTime || 0}
-            onChange={(e) => {
-              const startTime = Number(e.target.value);
-              store.updateAnimation(props.animation.id, {
-                ...props.animation,
-                startTime: startTime,
-              });
-            }}
-            min="0"
-            step="100"
+            min={0}
+            step={100}
+            value={props.animation.properties.startTime || 0}
+            onChange={(e) => handleStartTimeChange(Number(e.target.value))}
           />
         </div>
         <div className="flex flex-row items-center justify-between my-1">
@@ -207,39 +222,34 @@ export const ShapeAnimation = observer(
           <input
             className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
             type="number"
-            value={props.animation.endTime || props.animation.duration}
-            onChange={(e) => {
-              const endTime = Number(e.target.value);
-              store.updateAnimation(props.animation.id, {
-                ...props.animation,
-                endTime: endTime,
-              });
-            }}
-            min="0"
-            step="100"
+            min={0}
+            step={100}
+            value={props.animation.properties.endTime || store.maxTime}
+            onChange={(e) => handleEndTimeChange(Number(e.target.value))}
           />
         </div>
         <div className="flex flex-row items-center justify-between my-1">
-          <div className="text-white text-xs">Speed(ms)</div>
+          <div className="text-white text-xs">Duration(ms)</div>
           <input
             className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
             type="number"
+            min={100}
+            max={10000}
+            step={100}
             value={props.animation.duration}
-            onChange={(e) => {
-              const duration = Number(e.target.value);
-              const isValidDuration = duration > 0;
-              let newDuration = isValidDuration ? duration : 0;
-              if (newDuration < 10) {
-                newDuration = 10;
-              }
-              store.updateAnimation(props.animation.id, {
-                ...props.animation,
-                duration: newDuration,
-              });
-            }}
-            min="100"
-            max="5000"
-            step="100"
+            onChange={(e) => handleDurationChange(Number(e.target.value))}
+          />
+        </div>
+        <div className="flex flex-row items-center justify-between my-1">
+          <div className="text-white text-xs">Speed</div>
+          <input
+            className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
+            type="number"
+            min={0.1}
+            max={10}
+            step={0.1}
+            value={props.animation.properties.speed || 1}
+            onChange={(e) => handleSpeedChange(Number(e.target.value))}
           />
         </div>
         <div className="flex flex-row items-center justify-between my-1">
@@ -247,15 +257,7 @@ export const ShapeAnimation = observer(
           <select
             className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-24 text-xs"
             value={props.animation.properties.animationType}
-            onChange={(e) => {
-              store.updateAnimation(props.animation.id, {
-                ...props.animation,
-                properties: {
-                  ...props.animation.properties,
-                  animationType: e.target.value,
-                },
-              });
-            }}
+            onChange={(e) => handleAnimationTypeChange(e.target.value as ShapeAnimationType)}
           >
             <option value="rotate">Rotate</option>
             <option value="scale">Scale</option>
