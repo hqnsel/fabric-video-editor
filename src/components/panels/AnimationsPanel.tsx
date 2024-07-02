@@ -144,9 +144,9 @@ export const AnimationsPanel = observer(() => {
           Add Breathing
         </div>
       )}
-      {selectedElementAnimations.map((animation) => (
-        <AnimationResource key={animation.id} animation={animation} />
-      ))}
+    {selectedElementAnimations.map((animation) => (
+      <AnimationResource key={animation.id} animation={animation} />
+    ))}
     </>
   );
 });

@@ -32,12 +32,6 @@ export type TextEditorElement = EditorElementBase<
   }
 >;
 
-export type EditorElement =
-  | VideoEditorElement
-  | ImageEditorElement
-  | AudioEditorElement
-  | TextEditorElement;
-
 export type Placement = {
   x: number;
   y: number;
@@ -73,23 +67,12 @@ export type AnimationBase<T, P = {}> = {
   properties: P;
 }
 
-export type FadeInAnimation = AnimationBase<"fadeIn">;
-export type FadeOutAnimation = AnimationBase<"fadeOut">;
+export type ShapeAnimationType = 'rotate' | 'scale' | 'bounce' | 'float';
 
-export type BreatheAnimation = AnimationBase<"breathe">
-
-export type SlideDirection = "left" | "right" | "top" | "bottom";
-export type SlideTextType = 'none'|'character';
-export type SlideInAnimation = AnimationBase<"slideIn", {
-  direction: SlideDirection,
-  useClipPath: boolean,
-  textType:'none'|'character'
-}>;
-
-export type SlideOutAnimation = AnimationBase<"slideOut", {
-  direction: SlideDirection,
-  useClipPath: boolean,
-  textType:SlideTextType,
+export type ShapeAnimation = AnimationBase<"shape", {
+  animationType: ShapeAnimationType;
+  startTime: number;
+  endTime: number;
 }>;
 
 export type Animation =
@@ -97,7 +80,8 @@ export type Animation =
   | FadeOutAnimation
   | SlideInAnimation
   | SlideOutAnimation
-  | BreatheAnimation;
+  | BreatheAnimation
+  | ShapeAnimation;
 
 export type MenuOption =
   | "Video"
@@ -110,15 +94,22 @@ export type MenuOption =
   | "Effect"
   | "Fill";
 
-  export type ShapeEditorElement = EditorElement & {
-    type: 'shape';
-    properties: {
-      shapeType: 'rectangle' | 'circle' | 'triangle' | 'square';
-      fill: string;
-      stroke: string;
-      strokeWidth: number;
-      animation: 'none' | 'bounce' | 'float' | 'rotate' | 'circular' | 'square';
-      transitionDuration: number;
-      transitionColor: string;
-    };
-  };
+export type ShapeEditorElement = EditorElementBase<
+  "shape",
+  {
+    shapeType: 'rectangle' | 'circle' | 'triangle' | 'square';
+    fill: string;
+    stroke: string;
+    strokeWidth: number;
+    animation: ShapeAnimationType | 'none';
+    transitionDuration: number;
+    transitionColor: string;
+  }
+>;
+
+export type EditorElement =
+  | VideoEditorElement
+  | ImageEditorElement
+  | AudioEditorElement
+  | TextEditorElement
+  | ShapeEditorElement;

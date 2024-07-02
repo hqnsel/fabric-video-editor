@@ -186,13 +186,47 @@ export const ShapeAnimation = observer(
     return (
       <div className="flex flex-col w-full items-start">
         <div className="flex flex-row items-center justify-between my-1">
-          <div className="text-white text-xs">Duration(s)</div>
+          <div className="text-white text-xs">Start Time(ms)</div>
           <input
             className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
             type="number"
-            value={props.animation.duration / 1000}
+            value={props.animation.startTime || 0}
             onChange={(e) => {
-              const duration = Number(e.target.value) * 1000;
+              const startTime = Number(e.target.value);
+              store.updateAnimation(props.animation.id, {
+                ...props.animation,
+                startTime: startTime,
+              });
+            }}
+            min="0"
+            step="100"
+          />
+        </div>
+        <div className="flex flex-row items-center justify-between my-1">
+          <div className="text-white text-xs">End Time(ms)</div>
+          <input
+            className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
+            type="number"
+            value={props.animation.endTime || props.animation.duration}
+            onChange={(e) => {
+              const endTime = Number(e.target.value);
+              store.updateAnimation(props.animation.id, {
+                ...props.animation,
+                endTime: endTime,
+              });
+            }}
+            min="0"
+            step="100"
+          />
+        </div>
+        <div className="flex flex-row items-center justify-between my-1">
+          <div className="text-white text-xs">Speed(ms)</div>
+          <input
+            className="bg-slate-100 text-black rounded-lg px-2 py-1 ml-2 w-16 text-xs"
+            type="number"
+            value={props.animation.duration}
+            onChange={(e) => {
+              const duration = Number(e.target.value);
               const isValidDuration = duration > 0;
               let newDuration = isValidDuration ? duration : 0;
               if (newDuration < 10) {
@@ -203,6 +237,9 @@ export const ShapeAnimation = observer(
                 duration: newDuration,
               });
             }}
+            min="100"
+            max="5000"
+            step="100"
           />
         </div>
         <div className="flex flex-row items-center justify-between my-1">

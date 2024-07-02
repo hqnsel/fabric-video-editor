@@ -59,6 +59,26 @@ export const ShapeResourcesPanel = observer(() => {
     
     console.log('Adding shape with animation:', selectedAnimation);
     store.addShapeResource(shapeObject);
+    
+    if (selectedAnimation !== 'none') {
+      store.addAnimation({
+        id: Date.now().toString(),
+        type: 'shape',
+        targetId: shapeObject.id,
+        duration: transitionDuration,
+        properties: {
+          shapeType: shapeObject.properties.shapeType,
+          fill: shapeObject.properties.fill,
+          stroke: shapeObject.properties.stroke,
+          strokeWidth: shapeObject.properties.strokeWidth,
+          animation: shapeObject.properties.animation,
+          animationType: selectedAnimation,
+          transitionDuration: shapeObject.properties.transitionDuration,
+          transitionColor: shapeObject.properties.transitionColor,
+        },
+      });
+    }
+    
     console.log('Shape added:', shapeObject);
     console.log('Current animations:', store.animations);
   };

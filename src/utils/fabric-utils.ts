@@ -1,6 +1,7 @@
 import anime from "animejs";
 import { EditorElement, EffecType } from "@/types";
 import { fabric } from "fabric";
+import { ShapeAnimationType } from '../types';
 // https://jsfiddle.net/i_prikot/pw7yhaLf/
 
 export const CoverImage = fabric.util.createClass(fabric.Image, {
@@ -242,5 +243,38 @@ export class FabricUitls {
             strokeWidth: 0,
         });
         return clipRectangle;
+    }
+    static applyShapeAnimation(fabricObject: fabric.Object, animationType: ShapeAnimationType, duration: number) {
+        if (!fabricObject.canvas) return;
+      
+        const animationProps = getShapeAnimationProperties(animationType);
+        
+        anime({
+            targets: fabricObject,
+            ...animationProps,
+            duration: duration,
+            easing: 'easeInOutQuad',
+            loop: true,
+            update: () => {
+                fabricObject.set(animationProps);
+                fabricObject.setCoords();
+                fabricObject.canvas?.renderAll();
+            }
+        });
+    }
+}
+
+export function getShapeAnimationProperties(animationType: ShapeAnimationType) {
+    switch (animationType) {
+        case 'rotate':
+            return { angle: [0, 360] };
+        case 'scale':
+            return { scaleX: [1, 1.5], scaleY: [1, 1.5] };
+        case 'bounce':
+            return { top: ['-=20', '+=20'] };
+        case 'float':
+            return { top: ['-=10', '+=10'] };
+        default:
+            return {};
     }
 }

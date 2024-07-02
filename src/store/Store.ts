@@ -2,9 +2,11 @@ import { makeAutoObservable } from 'mobx';
 import { fabric } from 'fabric';
 import { getUid, isHtmlAudioElement, isHtmlImageElement, isHtmlVideoElement } from '@/utils';
 import anime from 'animejs';
-import { MenuOption, EditorElement, Animation, TimeFrame, VideoEditorElement, AudioEditorElement, Placement, ImageEditorElement, Effect, TextEditorElement, ShapeEditorElement } from '../types';import { FabricUitls } from '@/utils/fabric-utils';
+import { MenuOption, EditorElement, Animation, TimeFrame, VideoEditorElement, AudioEditorElement, Placement, ImageEditorElement, Effect, TextEditorElement, ShapeEditorElement } from '../types';
+import { FabricUitls, getShapeAnimationProperties } from '@/utils/fabric-utils';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL } from '@ffmpeg/util';
+import { ShapeAnimationType } from '../types';
 
 export class Store {
   canvas: fabric.Canvas | null
@@ -127,42 +129,7 @@ export class Store {
       properties: shapeObject.properties,
     };
   
-    let fabricObject;
-    switch (shapeObject.properties.shapeType) {
-      case 'rectangle':
-      case 'square':
-        fabricObject = new fabric.Rect({
-          left: element.placement.x,
-          top: element.placement.y,
-          width: element.placement.width,
-          height: element.placement.height,
-          fill: element.properties.fill,
-          stroke: element.properties.stroke,
-          strokeWidth: element.properties.strokeWidth,
-        });
-        break;
-      case 'circle':
-        fabricObject = new fabric.Circle({
-          left: element.placement.x,
-          top: element.placement.y,
-          radius: element.placement.width / 2,
-          fill: element.properties.fill,
-          stroke: element.properties.stroke,
-          strokeWidth: element.properties.strokeWidth,
-        });
-        break;
-      case 'triangle':
-        fabricObject = new fabric.Triangle({
-          left: element.placement.x,
-          top: element.placement.y,
-          width: element.placement.width,
-          height: element.placement.height,
-          fill: element.properties.fill,
-          stroke: element.properties.stroke,
-          strokeWidth: element.properties.strokeWidth,
-        });
-        break;
-    }
+    let fabricObject = this.createShapeObject(element);
   
     if (fabricObject) {
       fabricObject.set({
@@ -175,11 +142,7 @@ export class Store {
         lockScalingX: false,
         lockScalingY: false,
       });
-      
-      if (shapeObject.properties.animation && shapeObject.properties.animation !== 'none') {
-        this.applyAnimation(fabricObject, shapeObject.properties.animation);
-      }
-
+  
       element.fabricObject = fabricObject;
       if (this.canvas) {
         console.log('Created fabricObject:', fabricObject);
@@ -191,14 +154,7 @@ export class Store {
   
       console.log('Adding animation:', element.properties.animation);
       if (element.properties.animation && element.properties.animation !== 'none') {
-        this.addAnimation({
-          targetId: id,
-          type: element.properties.animation,
-          duration: element.properties.transitionDuration || 2000,
-          properties: {
-            direction: 'left',
-          },
-        });
+        this.applyAnimation(fabricObject, element.properties.animation);
       }
   
       this.refreshAnimations();
@@ -218,6 +174,10 @@ export class Store {
 
   addAnimation(animation: Animation) {
     console.log('Adding animation:', animation);
+    if (animation.type === 'shape') {
+      animation.properties.startTime = animation.properties.startTime || 0;
+      animation.properties.endTime = animation.properties.endTime || animation.duration;
+    }
     this.animations.push(animation);
     console.log('Animations after adding:', this.animations);
     this.refreshAnimations();
@@ -231,7 +191,7 @@ export class Store {
 
   refreshAnimations() {
     console.log('Refreshing animations');
-    anime.remove(this.animationTimeLine);
+   // anime.remove(this.animationTimeLine);
     this.animationTimeLine = anime.timeline({
       autoplay: false,
       duration: this.maxTime,
@@ -249,53 +209,25 @@ export class Store {
         continue;
       }
   
-      const animationConfig = {
-        targets: fabricObject,
-        duration: animation.duration,
-        easing: 'easeInOutQuad',
-      };
-
       switch (animation.type) {
         case "shape":
-          const shapeAnimation = {
+          const startTime = animation.properties.startTime || 0;
+          const endTime = animation.properties.endTime || animation.duration;
+          const animationDuration = endTime - startTime;
+          
+          const shapeAnimationProps = getShapeAnimationProperties(animation.properties.animationType);
+          this.animationTimeLine.add({
             targets: fabricObject,
-            duration: animation.duration,
-            easing: 'easeInOutQuad',
-          };
-          switch (animation.properties.animationType) {
-            case "rotate":
-              this.animationTimeLine.add({
-                ...shapeAnimation,
-                rotate: 360,
-                loop: true,
-              }, editorElement.timeFrame.start);
-              break;
-            case "scale":
-              this.animationTimeLine.add({
-                ...shapeAnimation,
-                scale: [1, 1.5],
-                direction: 'alternate',
-                loop: true,
-              }, editorElement.timeFrame.start);
-              break;
-            case "bounce":
-              this.animationTimeLine.add({
-                ...shapeAnimation,       
-                translateY: [0, -20],
-                direction: 'alternate',
-                loop: true,
-              }, editorElement.timeFrame.start);
-              break;
-            case "float":
-              this.animationTimeLine.add({
-                ...shapeAnimation,
-                translateY: [0, -10],
-                direction: 'alternate',
-                loop: true,
-                easing: 'easeInOutSine',
-              }, editorElement.timeFrame.start);
-              break;
-          }
+            duration: animationDuration,
+            ...shapeAnimationProps,
+            easing: 'linear',
+            autoplay: false,
+            update: () => {
+              if (this.canvas) {
+                this.canvas.renderAll();
+              }
+            }
+          }, startTime);
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -448,11 +380,9 @@ export class Store {
         }
       }
     }
+
     this.animationTimeLine.pause();
     this.animationTimeLine.seek(this.currentTimeInMs);
-    if (this.playing) {
-      this.startAnimation();
-    }
     console.log('Animations refreshed:', this.animationTimeLine);
   }
 
@@ -546,29 +476,13 @@ export class Store {
 private animationFrameId: number | null = null;
 
 private startAnimation() {
-  const animate = (time: number) => {
-    const elapsed = time - this.startedTime;
-    const currentTime = this.startedTimePlay + elapsed;
-    this.updateTimeTo(currentTime);
-    this.animationTimeLine.seek(currentTime);
-    this.canvas?.renderAll();
-    if (this.playing && currentTime <= this.maxTime) {
-      this.animationFrameId = requestAnimationFrame(animate);
-    } else {
-      this.setPlaying(false);
-    }
-  };
-  this.startedTime = performance.now();
-  this.startedTimePlay = this.currentTimeInMs;
+  this.playing = true;
   this.animationTimeLine.play();
-  this.animationFrameId = requestAnimationFrame(animate);
 }
 
 private stopAnimation() {
-  if (this.animationFrameId !== null) {
-    cancelAnimationFrame(this.animationFrameId);
-    this.animationFrameId = null;
-  }
+  this.playing = false;
+  this.animationTimeLine.pause();
 }
 
   startedTime = 0;
@@ -600,6 +514,7 @@ private stopAnimation() {
     this.updateVideoElements();
     this.updateAudioElements();
     this.animationTimeLine.seek(newTime);
+    this.updateShapeElements(newTime);
     this.canvas?.renderAll();
   }
   
@@ -774,7 +689,21 @@ handleSeek(seek: number) {
       if (!e.fabricObject) return;
       const isInside = e.timeFrame.start <= newTime && newTime <= e.timeFrame.end;
       e.fabricObject.visible = isInside;
+      if (isInside) {
+        const animation = this.animations.find(a => a.targetId === e.id && a.type === 'shape');
+        if (animation) {
+          const progress = (newTime - e.timeFrame.start) / (e.timeFrame.end - e.timeFrame.start);
+          const shapeAnimationProps = getShapeAnimationProperties(animation.properties.animationType);
+          Object.entries(shapeAnimationProps).forEach(([prop, value]) => {
+            if (Array.isArray(value)) {
+              const [start, end] = value;
+              (e.fabricObject as any)[prop] = start + (end - start) * progress;
+            }
+          });
+        }
+      }
     });
+    this.canvas?.renderAll();
   }
 
   updateVideoElements() {
@@ -1031,6 +960,9 @@ handleSeek(seek: number) {
   
     if (fabricObject) {
       this.setCommonObjectProperties(fabricObject, element);
+      if (element.type === 'shape' && (element as ShapeEditorElement).properties.animation !== 'none') {
+        this.applyAnimation(fabricObject, (element as ShapeEditorElement).properties.animation);
+      }
     }
   
     return fabricObject;
@@ -1156,19 +1088,24 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-  private applyAnimation(object: fabric.Object, animationType: string) {
-    const animation: Animation = {
-      id: getUid(),
-      targetId: object.name as string,
-      type: object instanceof fabric.Rect || object instanceof fabric.Circle || object instanceof fabric.Triangle ? 'shape' : animationType,
-      duration: 2000,
-      properties: {
-        animationType: object instanceof fabric.Rect || object instanceof fabric.Circle || object instanceof fabric.Triangle ? animationType : undefined,
-        direction: 'left',
-      },
-    };
-    this.addAnimation(animation);
-    this.refreshAnimations();
+  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType) {
+    if (!this.canvas || animationType === 'none') return;
+  
+    const animationProps = getShapeAnimationProperties(animationType);
+    const duration = 2000; // You can adjust this or make it a parameter
+  
+    anime({
+      targets: object,
+      ...animationProps,
+      duration: duration,
+      easing: 'easeInOutQuad',
+      loop: true,
+      update: () => {
+        if (this.canvas) {
+          this.canvas.renderAll();
+        }
+      }
+    });
   }
 }
 

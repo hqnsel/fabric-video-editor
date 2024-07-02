@@ -3,11 +3,14 @@
 import React from 'react';
 import { observer } from 'mobx-react';
 
-const ShapeResource = observer(({ shape }) => {
+interface ShapeProps {
+  shape: any;
+}
+
+const ShapeResource: React.FC<ShapeProps> = observer(({ shape }) => {
     if (!shape) {
         return <p>Shape data is missing!</p>;
     }
-
     return (
         <div style={{
             padding: '10px',
