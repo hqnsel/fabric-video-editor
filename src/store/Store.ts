@@ -154,8 +154,7 @@ export class Store {
   
       console.log('Adding animation:', element.properties.animation);
       if (element.properties.animation && element.properties.animation !== 'none') {
-        const animation = FabricUitls.applyShapeAnimation(fabricObject, element.properties.animation, element.properties.transitionDuration);
-        this.addAnimation({
+        const animation = {
           id: getUid(),
           type: 'shape',
           targetId: id,
@@ -163,8 +162,8 @@ export class Store {
           properties: {
             animationType: element.properties.animation,
           },
-          animeInstance: animation,
-        });
+        };
+        this.addAnimation(animation);
       }
   
       this.refreshAnimations();
@@ -213,9 +212,25 @@ export class Store {
   
       switch (animation.type) {
         case "shape":
-          if (animation.animeInstance) {
-            this.animationTimeLine.add(animation.animeInstance, 0);
-          }
+          const animationProps = getShapeAnimationProperties(animation.properties.animationType as ShapeAnimationType);
+          this.animationTimeLine.add({
+            targets: fabricObject,
+            ...animationProps,
+            duration: animation.duration,
+            easing: 'easeInOutQuad',
+            loop: true,
+            autoplay: false,
+            begin: () => {
+              fabricObject.set({
+                left: element.placement.x,
+                top: element.placement.y,
+              });
+            },
+            update: () => {
+              fabricObject.setCoords();
+              this.canvas?.renderAll();
+            }
+          }, element.timeFrame.start);
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -460,11 +475,15 @@ export class Store {
   play() {
     this.playing = true;
     this.animationTimeLine.play();
+    this.updateElementsVisibility(this.currentTimeInMs);
+    this.canvas?.renderAll();
   }
   
   pause() {
     this.playing = false;
     this.animationTimeLine.pause();
+    this.updateElementsVisibility(this.currentTimeInMs);
+    this.canvas?.renderAll();
   }
   
   stop() {
@@ -472,6 +491,7 @@ export class Store {
     this.animationTimeLine.pause();
     this.animationTimeLine.seek(0);
     this.setCurrentTimeInMs(0);
+    this.updateElementsVisibility(0);
     this.canvas?.renderAll();
   }
 
