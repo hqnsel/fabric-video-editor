@@ -6,15 +6,17 @@ import ShapeResource from "../entity/ShapeResource";
 import anime from 'animejs';
 
 export const ShapeResourcesPanel = observer(() => {
+  const store = useContext(StoreContext);
+  const canvas = store.canvas;
+
   const [selectedShape, setSelectedShape] = useState('rectangle');
   const [fillColor, setFillColor] = useState('red');
   const [outlineColor, setOutlineColor] = useState('black');
   const [lineWidth, setLineWidth] = useState(1);
   const [selectedAnimation, setSelectedAnimation] = useState('none');
-  const [transitionDuration, setTransitionDuration] = useState(1000);
-  const [transitionColor, setTransitionColor] = useState('blue');
-  const store = useContext(StoreContext);
-  const canvas = store.canvas;
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(store.maxTime);
+  const [speed, setSpeed] = useState(1);
 
   const handleAddShape = () => {
     if (!canvas) {
@@ -31,8 +33,9 @@ export const ShapeResourcesPanel = observer(() => {
         strokeWidth: lineWidth,
         animation: selectedAnimation,
         animationType: selectedAnimation,
-        transitionDuration,
-        transitionColor,
+        startTime,
+        endTime,
+        speed,
       },
       placement: {
         x: 100,
@@ -84,8 +87,9 @@ export const ShapeResourcesPanel = observer(() => {
           <option value="circular">Circular Motion</option>
           <option value="square">Square Motion</option>
         </select>
-        <input type="number" value={transitionDuration} onChange={e => setTransitionDuration(Number(e.target.value))} min="100" max="5000" step="100" />
-        <input type="color" value={transitionColor} onChange={e => setTransitionColor(e.target.value)} />
+        <input type="number" value={startTime} onChange={e => setStartTime(Number(e.target.value))} min="0" max={store.maxTime} step="100" />
+        <input type="number" value={endTime} onChange={e => setEndTime(Number(e.target.value))} min="0" max={store.maxTime} step="100" />
+        <input type="number" value={speed} onChange={e => setSpeed(Number(e.target.value))} min="0.1" max="10" step="0.1" />
         <button onClick={handleAddShape}>Add Shape</button>
       </div>
       <div>

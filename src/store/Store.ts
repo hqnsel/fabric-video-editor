@@ -222,20 +222,17 @@ export class Store {
         case "shape":
           const startTime = animation.properties.startTime || 0;
           const endTime = animation.properties.endTime || this.maxTime;
-          const duration = endTime - startTime;
           const speed = animation.properties.speed || 1;
           
           const animeInstance = this.applyAnimation(
             fabricObject, 
             animation.properties.animationType as ShapeAnimationType,
-            duration,
+            startTime,
+            endTime,
             speed
           );
           if (animeInstance) {
-            this.animationTimeLine.add({
-              ...animeInstance,
-              duration: duration,
-            }, startTime);
+            this.animationTimeLine.add(animeInstance, startTime);
           }
           break;
         case "fadeIn": {
@@ -1089,7 +1086,7 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType, duration: number, speed: number) {
+  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType, startTime: number, endTime: number, speed: number) {
     if (!this.canvas || animationType === 'none') return;
   
     const animationProps = getShapeAnimationProperties(animationType);
@@ -1101,12 +1098,21 @@ handleSeek(seek: number) {
       }
     }
   
+    const totalDuration = endTime - startTime;
+    const cycleDuration = 1000 / speed;
+    const repeatCount = Math.max(Math.floor(totalDuration / cycleDuration), 1);
+  
     return {
       targets: object,
       ...finalProps,
+      duration: cycleDuration,
       easing: 'linear',
       loop: true,
-      update: () => {
+      repeat: repeatCount - 1,
+      update: (anim) => {
+        if (anim.currentTime >= totalDuration) {
+          anim.pause();
+        }
         object.setCoords();
         this.canvas?.renderAll();
       }
