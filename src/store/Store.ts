@@ -223,17 +223,22 @@ export class Store {
           const startTime = animation.properties.startTime || 0;
           const endTime = animation.properties.endTime || this.maxTime;
           const speed = animation.properties.speed || 1;
+          const duration = endTime - startTime;
           
-          const animeInstance = this.applyAnimation(
-            fabricObject, 
-            animation.properties.animationType as ShapeAnimationType,
-            startTime,
-            endTime,
-            speed
-          );
-          if (animeInstance) {
-            this.animationTimeLine.add(animeInstance, startTime);
-          }
+          const animationProps = getShapeAnimationProperties(animation.properties.animationType as ShapeAnimationType);
+          
+          this.animationTimeLine.add({
+            targets: fabricObject,
+            ...animationProps,
+            duration: duration,
+            easing: 'linear',
+            loop: true,
+            autoplay: false,
+            update: () => {
+              fabricObject.setCoords();
+              this.canvas?.renderAll();
+            }
+          }, startTime);
           break;
         case "fadeIn": {
           this.animationTimeLine.add({
@@ -1086,37 +1091,24 @@ handleSeek(seek: number) {
     return fabricObject;
   }
   
-  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType, startTime: number, endTime: number, speed: number) {
+  private applyAnimation(object: fabric.Object, animationType: ShapeAnimationType, duration: number, speed: number) {
     if (!this.canvas || animationType === 'none') return;
   
     const animationProps = getShapeAnimationProperties(animationType);
     
-    let finalProps: any = {};
-    for (const [key, value] of Object.entries(animationProps)) {
-      if (Array.isArray(value)) {
-        finalProps[key] = value;
-      }
-    }
-  
-    const totalDuration = endTime - startTime;
     const cycleDuration = 1000 / speed;
-    const repeatCount = Math.max(Math.floor(totalDuration / cycleDuration), 1);
   
-    return {
+    return anime({
       targets: object,
-      ...finalProps,
+      ...animationProps,
       duration: cycleDuration,
       easing: 'linear',
       loop: true,
-      repeat: repeatCount - 1,
-      update: (anim) => {
-        if (anim.currentTime >= totalDuration) {
-          anim.pause();
-        }
+      update: () => {
         object.setCoords();
         this.canvas?.renderAll();
       }
-    };
+    });
   }
 }
 
