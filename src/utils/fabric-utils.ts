@@ -268,7 +268,8 @@ export function getShapeAnimationProperties(type: ShapeAnimationType) {
     switch (type) {
       case 'rotate':
         return {
-          angle: (el: any) => el.angle + 360
+          angle: [0, 360],
+          loop: true
         };
       case 'scale':
         return { scale: [1, 1.5, 1] };

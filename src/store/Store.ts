@@ -227,35 +227,24 @@ export class Store {
           
           const animationProps = getShapeAnimationProperties(animation.properties.animationType);
           
-          let animationConfig;
-          switch (animation.properties.animationType) {
-            case 'rotate':
-              const singleRotationDuration = 1000 / speed;
-              const rotations = Math.ceil(totalDuration / singleRotationDuration);
-              animationConfig = {
-                ...animationProps,
-                duration: singleRotationDuration,
-                loop: rotations
-              };
-              break;
-            case 'bounce':
-            case 'float':
-            case 'scale':
-              animationConfig = {
-                ...animationProps,
-                duration: totalDuration,
-                loop: true
-              };
-              break;
-            default:
-              console.error('Unknown shape animation type:', animation.properties.animationType);
-              return;
+          let animationConfig = {
+            ...animationProps,
+            duration: animation.properties.animationType === 'rotate' ? 1000 / speed : totalDuration,
+            easing: 'linear',
+            loop: true
+          };
+        
+          if (animation.properties.animationType === 'rotate') {
+            animationConfig.loopComplete = (anim: anime.AnimeInstance) => {
+              if (this.currentTimeInMs >= endTime) {
+                anim.pause();
+              }
+            };
           }
         
           this.animationTimeLine.add({
             targets: fabricObject,
             ...animationConfig,
-            easing: 'linear',
             autoplay: false,
             update: () => {
               fabricObject.setCoords();
