@@ -268,17 +268,18 @@ export function getShapeAnimationProperties(type: ShapeAnimationType) {
     switch (type) {
       case 'rotate':
         return {
-          angle: (el: any) => el.angle + 360,
-          loop: true,
-          duration: 1000,
+          angle: (el: any) => el.angle + 360
         };
       case 'scale':
-        return { scale: [1, 1.5] };
+        return { scale: [1, 1.5, 1] };
       case 'bounce':
-        return { translateY: [0, -20] };
+        return { translateY: [0, -20, 0] };
       case 'float':
-        return { translateY: [0, -10], translateX: [0, 10] };
+        return { 
+          translateY: [0, -10, 0],
+          translateX: [0, 10, 0]
+        };
       default:
         return {};
     }
-  }
+}
