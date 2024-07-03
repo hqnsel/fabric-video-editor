@@ -220,17 +220,17 @@ export class Store {
   
       switch (animation.type) {
         case "shape":
-          const startTime = animation.properties.startTime || 0;
-          const endTime = animation.properties.endTime || this.maxTime;
+          const startTime = animation.properties.startTime;
+          const endTime = animation.properties.endTime;
           const speed = animation.properties.speed || 1;
           const duration = endTime - startTime;
           
-          const animationProps = getShapeAnimationProperties(animation.properties.animationType as ShapeAnimationType);
+          const animationProps = getShapeAnimationProperties(animation.properties.animationType);
           
           this.animationTimeLine.add({
             targets: fabricObject,
             ...animationProps,
-            duration: duration,
+            duration: duration / speed,
             easing: 'linear',
             loop: true,
             autoplay: false,

@@ -3,6 +3,7 @@ import React, { useContext, useState } from "react";
 import { observer } from "mobx-react";
 import { StoreContext } from "@/store";
 import ShapeResource from "../entity/ShapeResource";
+import { getUid } from '@/utils';
 import anime from 'animejs';
 
 export const ShapeResourcesPanel = observer(() => {
@@ -32,10 +33,6 @@ export const ShapeResourcesPanel = observer(() => {
         stroke: outlineColor,
         strokeWidth: lineWidth,
         animation: selectedAnimation,
-        animationType: selectedAnimation,
-        startTime,
-        endTime,
-        speed,
       },
       placement: {
         x: 100,
@@ -60,11 +57,22 @@ export const ShapeResourcesPanel = observer(() => {
       shapeObject.placement.height = 60;
     }
     
-    console.log('Adding shape with animation:', selectedAnimation);
     const addedShape = store.addShapeResource(shapeObject);
     
-    console.log('Shape added:', addedShape);
-    console.log('Current animations:', store.animations);
+    if (selectedAnimation !== 'none') {
+      store.addAnimation({
+        id: getUid(),
+        type: "shape",
+        targetId: addedShape.id,
+        duration: endTime - startTime,
+        properties: {
+          animationType: selectedAnimation as ShapeAnimationType,
+          startTime: startTime,
+          endTime: endTime,
+          speed: speed,
+        },
+      });
+    }
   };
 
   return (

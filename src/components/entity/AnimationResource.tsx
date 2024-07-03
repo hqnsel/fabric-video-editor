@@ -181,7 +181,7 @@ export const SlideAnimation = observer(
 );
 
 export const ShapeAnimation = observer(
-  (props: { animation: Animation }) => {
+  (props: { animation: ShapeAnimation }) => {
     const store = React.useContext(StoreContext);
 
     const handleStartTimeChange = (value: number) => {
@@ -213,7 +213,7 @@ export const ShapeAnimation = observer(
             type="number"
             min={0}
             step={100}
-            value={props.animation.properties.startTime || 0}
+            value={props.animation.properties.startTime}
             onChange={(e) => handleStartTimeChange(Number(e.target.value))}
           />
         </div>
@@ -224,7 +224,7 @@ export const ShapeAnimation = observer(
             type="number"
             min={0}
             step={100}
-            value={props.animation.properties.endTime || store.maxTime}
+            value={props.animation.properties.endTime}
             onChange={(e) => handleEndTimeChange(Number(e.target.value))}
           />
         </div>
